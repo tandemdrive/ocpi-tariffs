@@ -1,0 +1,8 @@
+[package]
+name = "ocpi-tarrifs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.22"
+rust_decimal = "1.26.1"
