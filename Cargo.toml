@@ -1,8 +1,9 @@
 [package]
-name = "ocpi-tarrifs"
+name = "ocpi-tariffs"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 chrono = "0.4.22"
+chrono-tz = "0.7.0"
 rust_decimal = "1.26.1"
