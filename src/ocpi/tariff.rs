@@ -1,5 +1,7 @@
 //! The Tariff object describes a tariff and its properties
 
+use chrono::Weekday;
+
 use crate::ocpi::{DateTime, DisplayText, Number, Price};
 
 /// The Tariff object describes a tariff and its properties
@@ -69,9 +71,23 @@ pub enum DayOfWeek {
     Sunday,
 }
 
+impl From<DayOfWeek> for Weekday {
+    fn from(day: DayOfWeek) -> Self {
+        match day {
+            DayOfWeek::Monday => Self::Mon,
+            DayOfWeek::Tuesday => Self::Tue,
+            DayOfWeek::Wednesday => Self::Wed,
+            DayOfWeek::Thursday => Self::Thu,
+            DayOfWeek::Friday => Self::Fri,
+            DayOfWeek::Saturday => Self::Sat,
+            DayOfWeek::Sunday => Self::Sun,
+        }
+    }
+}
+
 /// Component of a tariff price
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PriceComponent {
+pub struct OcpiPriceComponent {
     /// Type of tariff dimension
     pub component_type: TariffDimensionType,
 
@@ -91,7 +107,7 @@ pub struct PriceComponent {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OcpiTariffElement {
     /// List of price components that make up the pricing of this tariff
-    pub price_components: Vec<PriceComponent>,
+    pub price_components: Vec<OcpiPriceComponent>,
 
     /// Tariff restrictions object
     pub restrictions: Option<OcpiTariffRestriction>,
@@ -109,7 +125,6 @@ pub enum TariffDimensionType {
     /// Time charging: defined in hours, step_size multiplier: 1 second
     Time,
 }
-
 
 /// Indicates when a tariff applies
 #[derive(Debug, Clone, PartialEq, Eq)]

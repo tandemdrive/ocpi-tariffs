@@ -56,30 +56,13 @@ pub struct OcpiCdrDimension {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OcpiCdrDimensionType {
-    Current,
-
     Energy,
-
-    EnergyExport,
-
-    EnergyImport,
-
     MaxCurrent,
-
     MinCurrent,
-
     MaxPower,
-
     MinPower,
-
     ParkingTime,
-
-    Power,
-
     ReservationTime,
-
-    StateOfCharge,
-
     Time,
 }
 

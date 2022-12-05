@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use chrono::{Duration, NaiveDate, NaiveTime};
+use chrono::{Duration, NaiveDate, NaiveTime, Weekday};
 
-use crate::ocpi::tariff::{DayOfWeek, OcpiTariffRestriction};
+use crate::ocpi::tariff::OcpiTariffRestriction;
 use crate::ocpi::Number;
 use crate::{ChargeState, Error};
 
@@ -71,7 +71,7 @@ pub fn collect_restrictions(
 
     if !restriction.day_of_week.is_empty() {
         collected.push(Restriction::DayOfWeek(HashSet::from_iter(
-            restriction.day_of_week.clone(),
+            restriction.day_of_week.iter().copied().map(Into::into),
         )))
     }
 
@@ -96,11 +96,12 @@ pub enum Restriction {
     MaxPower(Number),
     MinDuration(Duration),
     MaxDuration(Duration),
-    DayOfWeek(HashSet<DayOfWeek>),
+    DayOfWeek(HashSet<Weekday>),
     Reservation,
 }
 
 impl Restriction {
+
     fn is_valid(&self, state: &ChargeState) -> Option<bool> {
         match self {
             &Self::WrappingTime {
@@ -125,9 +126,13 @@ impl Restriction {
             }
             &Self::MinPower(min_power) => state.min_power.map(|power| power >= min_power),
             &Self::MaxPower(max_power) => state.max_power.map(|power| power < max_power),
-            &Self::MinDuration(min_duration) => Some(state.duration >= min_duration),
-            &Self::MaxDuration(max_duration) => Some(state.duration < max_duration),
-            Self::DayOfWeek(days) => Some(days.contains(&state.day_of_week)),
+            &Self::MinDuration(min_duration) => state
+                .total_duration
+                .map(|duration| duration >= min_duration),
+            &Self::MaxDuration(max_duration) => {
+                state.total_duration.map(|duration| duration < max_duration)
+            }
+            Self::DayOfWeek(days) => Some(days.contains(&state.local_weekday())),
             &Self::Reservation => todo!(),
         }
     }
