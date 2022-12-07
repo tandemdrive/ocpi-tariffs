@@ -89,9 +89,9 @@ impl TariffElement {
         Ok(element)
     }
 
-    fn is_active(&self, state: &ChargeState) -> Option<bool> {
+    fn is_active(&self, period: &ChargePeriod) -> Option<bool> {
         for restriction in self.restrictions.iter() {
-            if !restriction.is_valid(state)? {
+            if !restriction.is_valid(period)? {
                 return Some(false);
             }
         }
@@ -106,28 +106,22 @@ pub struct ChargeSession {
 
 impl ChargeSession {
     pub fn new(cdr: &Cdr, local_timezone: Tz) -> Self {
-        let initial_state = ChargeState::new(local_timezone, cdr.start_date_time);
         let mut periods: Vec<ChargePeriod> = Vec::new();
 
         for (i, period) in cdr.charging_periods.iter().enumerate() {
-            let last_state = periods
-                .last()
-                .map(|p| &p.end_state)
-                .unwrap_or(&initial_state);
+            let end_date_time = if let Some(next_period) = cdr.charging_periods.get(i + 1) {
+                next_period.start_date_time
+            } else {
+                cdr.stop_date_time
+            };
 
-            let end_date_time = cdr
-                .charging_periods
-                .get(i + 1)
-                .map(|p| p.start_date_time)
-                .unwrap_or(cdr.stop_date_time);
+            let next = if let Some(last) = periods.last() {
+                last.next(period, end_date_time)
+            } else {
+                ChargePeriod::new(local_timezone, period, end_date_time)
+            };
 
-            let start_state = last_state.next_start(period);
-            let end_state = last_state.next_end(period, end_date_time);
-
-            periods.push(ChargePeriod {
-                start_state,
-                end_state,
-            });
+            periods.push(next);
         }
 
         Self { periods }
@@ -135,100 +129,136 @@ impl ChargeSession {
 }
 
 pub struct ChargePeriod {
-    start_state: ChargeState,
-    end_state: ChargeState,
+    local_timezone: Tz,
+    start_date_time: DateTime,
+    end_date_time: DateTime,
+    state: ChargeState,
+    start_aggregate: ChargeAggregate,
+    end_aggregate: ChargeAggregate,
 }
 
 impl ChargePeriod {
-    pub fn new(start_state: ChargeState, end_state: ChargeState) -> Self {
+    pub fn new(local_timezone: Tz, period: &OcpiChargingPeriod, end_date_time: DateTime) -> Self {
+        let state = ChargeState::new(period);
+        let start_aggregate = ChargeAggregate::zero();
+        let end_aggregate = start_aggregate.add(period);
+
         Self {
-            start_state,
-            end_state,
+            local_timezone,
+            end_date_time,
+            start_date_time: period.start_date_time,
+            state,
+            start_aggregate,
+            end_aggregate,
         }
+    }
+
+    pub fn next(&self, period: &OcpiChargingPeriod, end_date_time: DateTime) -> Self {
+        let state = ChargeState::new(period);
+        let start_aggregate = self.end_aggregate;
+        let end_aggregate = start_aggregate.add(period);
+
+        Self {
+            local_timezone: self.local_timezone,
+            start_date_time: period.start_date_time,
+            end_date_time,
+            state,
+            start_aggregate,
+            end_aggregate,
+        }
+    }
+
+    fn local_start_time(&self) -> NaiveTime {
+        self.start_date_time
+            .with_timezone(&self.local_timezone)
+            .time()
+    }
+
+    fn local_start_date(&self) -> NaiveDate {
+        self.start_date_time
+            .with_timezone(&self.local_timezone)
+            .date_naive()
+    }
+
+    fn local_start_weekday(&self) -> Weekday {
+        self.start_date_time
+            .with_timezone(&self.local_timezone)
+            .weekday()
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct ChargeState {
-    local_timezone: Tz,
-    date_time: DateTime,
-    total_duration: Option<Duration>,
-    total_energy: Option<Number>,
     max_current: Option<Number>,
     min_current: Option<Number>,
     max_power: Option<Number>,
     min_power: Option<Number>,
 }
 
-impl ChargeState {
-    fn new(local_timezone: Tz, date_time: DateTime) -> Self {
+#[derive(Debug, Clone, Copy)]
+pub struct ChargeAggregate {
+    duration: Option<Duration>,
+    energy: Option<Number>,
+}
+
+impl ChargeAggregate {
+    pub fn zero() -> Self {
         Self {
-            local_timezone,
-            date_time,
-            total_duration: Some(Duration::zero()),
-            total_energy: Some(Number::zero()),
-            max_current: None,
-            min_current: None,
-            max_power: None,
-            min_power: None,
+            duration: Some(Duration::zero()),
+            energy: Some(Number::zero()),
         }
     }
 
-    fn next_start(&self, period: &OcpiChargingPeriod) -> Self {
-        let mut next = self.clone();
-
-        next.min_power = None;
-        next.max_power = None;
-        next.min_current = None;
-        next.max_current = None;
-
-        for dimension in period.dimensions.iter() {
-            match dimension.dimension_type {
-                OcpiCdrDimensionType::MinCurrent => next.min_current = Some(dimension.volume),
-                OcpiCdrDimensionType::MaxCurrent => next.max_current = Some(dimension.volume),
-                OcpiCdrDimensionType::MaxPower => next.max_power = Some(dimension.volume),
-                OcpiCdrDimensionType::MinPower => next.min_power = Some(dimension.volume),
-                _ => {}
-            }
+    pub fn new() -> Self {
+        Self {
+            duration: None,
+            energy: None,
         }
-
-        next
     }
 
-    fn next_end(&self, period: &OcpiChargingPeriod, date_time: DateTime) -> Self {
-        let mut next = self.clone();
-        next.date_time = date_time;
+    pub fn add(&self, period: &OcpiChargingPeriod) -> Self {
+        let mut result = Self::new();
 
         for dimension in period.dimensions.iter() {
             match dimension.dimension_type {
                 OcpiCdrDimensionType::Time => {
-                    next.total_duration = next.total_duration.map(|duration| {
+                    result.duration = self.duration.map(|duration| {
                         let millis = dimension.volume * Decimal::from_str("3600_000").unwrap();
                         Duration::milliseconds(millis.try_into().unwrap()) + duration
                     });
                 }
                 OcpiCdrDimensionType::Energy => {
-                    next.total_energy = next.total_energy.map(|energy| energy + dimension.volume)
+                    result.energy = self.energy.map(|energy| energy + dimension.volume)
                 }
                 _ => {}
             }
         }
 
-        next
+        result
     }
+}
 
-    fn local_time(&self) -> NaiveTime {
-        self.date_time.with_timezone(&self.local_timezone).time()
-    }
+impl ChargeState {
 
-    fn local_date(&self) -> NaiveDate {
-        self.date_time
-            .with_timezone(&self.local_timezone)
-            .date_naive()
-    }
+    fn new(period: &OcpiChargingPeriod) -> Self {
+        let mut inst = Self {
+            max_current: None,
+            min_current: None,
+            max_power: None,
+            min_power: None,
+        };
 
-    fn local_weekday(&self) -> Weekday {
-        self.date_time.with_timezone(&self.local_timezone).weekday()
+        for dimension in period.dimensions.iter() {
+            match dimension.dimension_type {
+                OcpiCdrDimensionType::MinCurrent => inst.min_current = Some(dimension.volume),
+                OcpiCdrDimensionType::MaxCurrent => inst.max_current = Some(dimension.volume),
+                OcpiCdrDimensionType::MaxPower => inst.max_power = Some(dimension.volume),
+                OcpiCdrDimensionType::MinPower => inst.min_power = Some(dimension.volume),
+                _ => {}
+            }
+        }
+
+        inst
     }
 }
 
