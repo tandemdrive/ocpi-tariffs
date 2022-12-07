@@ -101,8 +101,7 @@ pub enum Restriction {
 }
 
 impl Restriction {
-
-    fn is_valid(&self, state: &ChargeState) -> Option<bool> {
+    pub fn is_valid(&self, state: &ChargeState) -> Option<bool> {
         match self {
             &Self::WrappingTime {
                 start_time,

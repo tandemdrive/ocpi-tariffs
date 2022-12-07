@@ -1,6 +1,8 @@
 mod ocpi;
 mod restriction;
 
+use std::str::FromStr;
+
 use chrono::{Datelike, Duration, NaiveDate, NaiveTime, Weekday};
 use chrono_tz::Tz;
 use ocpi::{
@@ -86,6 +88,16 @@ impl TariffElement {
 
         Ok(element)
     }
+
+    fn is_active(&self, state: &ChargeState) -> Option<bool> {
+        for restriction in self.restrictions.iter() {
+            if !restriction.is_valid(state)? {
+                return Some(false);
+            }
+        }
+
+        Some(true)
+    }
 }
 
 pub struct ChargeSession {
@@ -127,6 +139,16 @@ pub struct ChargePeriod {
     end_state: ChargeState,
 }
 
+impl ChargePeriod {
+    pub fn new(start_state: ChargeState, end_state: ChargeState) -> Self {
+        Self {
+            start_state,
+            end_state,
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct ChargeState {
     local_timezone: Tz,
     date_time: DateTime,
@@ -153,11 +175,46 @@ impl ChargeState {
     }
 
     fn next_start(&self, period: &OcpiChargingPeriod) -> Self {
-        todo!()
+        let mut next = self.clone();
+
+        next.min_power = None;
+        next.max_power = None;
+        next.min_current = None;
+        next.max_current = None;
+
+        for dimension in period.dimensions.iter() {
+            match dimension.dimension_type {
+                OcpiCdrDimensionType::MinCurrent => next.min_current = Some(dimension.volume),
+                OcpiCdrDimensionType::MaxCurrent => next.max_current = Some(dimension.volume),
+                OcpiCdrDimensionType::MaxPower => next.max_power = Some(dimension.volume),
+                OcpiCdrDimensionType::MinPower => next.min_power = Some(dimension.volume),
+                _ => {}
+            }
+        }
+
+        next
     }
 
     fn next_end(&self, period: &OcpiChargingPeriod, date_time: DateTime) -> Self {
-        todo!()
+        let mut next = self.clone();
+        next.date_time = date_time;
+
+        for dimension in period.dimensions.iter() {
+            match dimension.dimension_type {
+                OcpiCdrDimensionType::Time => {
+                    next.total_duration = next.total_duration.map(|duration| {
+                        let millis = dimension.volume * Decimal::from_str("3600_000").unwrap();
+                        Duration::milliseconds(millis.try_into().unwrap()) + duration
+                    });
+                }
+                OcpiCdrDimensionType::Energy => {
+                    next.total_energy = next.total_energy.map(|energy| energy + dimension.volume)
+                }
+                _ => {}
+            }
+        }
+
+        next
     }
 
     fn local_time(&self) -> NaiveTime {
