@@ -1,4 +1,4 @@
-use crate::ocpi::tariff::Tariff;
+use crate::ocpi::tariff::OcpiTariff;
 use crate::ocpi::{DateTime, Number, Price};
 
 /// The CDR object describes the Charging Session and its costs. How these costs are build up etc.
@@ -14,7 +14,7 @@ pub struct Cdr {
     pub currency: String,
 
     /// List of relevant tariff elements
-    pub tariffs: Vec<Tariff>,
+    pub tariffs: Vec<OcpiTariff>,
 
     /// List of charging periods that make up this charging session> A session should consist of 1 or
     /// more periods, where each period has a different relevant Tariff

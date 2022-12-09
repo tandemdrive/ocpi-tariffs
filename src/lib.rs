@@ -7,25 +7,12 @@ use chrono::{Datelike, Duration, NaiveDate, NaiveTime, Weekday};
 use chrono_tz::Tz;
 use ocpi::{
     cdr::{Cdr, OcpiCdrDimensionType, OcpiChargingPeriod},
-    tariff::{OcpiPriceComponent, OcpiTariffElement, TariffDimensionType},
+    tariff::{OcpiPriceComponent, OcpiTariff, OcpiTariffElement, TariffDimensionType},
     DateTime, Number,
 };
 
 use restriction::{collect_restrictions, Restriction};
 use rust_decimal::{prelude::Zero, Decimal};
-
-/// An event is a point in time where a price component for a certain dimension either becomes
-/// active or inactive
-pub struct Event<'t> {
-    /// The time at which this event occured
-    pub time: DateTime,
-    /// Whether this event activates or deactivates the price component.
-    pub kind: EventKind,
-    /// The dimension for which this event applies.
-    pub dimension: TariffDimensionType,
-    /// The `TariffElement` for which this event applies.
-    pub element: &'t OcpiTariffElement,
-}
 
 #[derive(Debug)]
 struct PriceComponent {
@@ -48,6 +35,26 @@ impl From<&OcpiPriceComponent> for PriceComponent {
             vat: component.vat,
             step_size: component.step_size,
         }
+    }
+}
+
+struct Tariff {
+    elements: Vec<TariffElement>,
+    start_date_time: Option<DateTime>,
+    end_date_time: Option<DateTime>,
+}
+
+impl Tariff {
+    pub fn new(tariff: &OcpiTariff) -> Result<Self, Error> {
+        Ok(Self {
+            start_date_time: tariff.start_date_time,
+            end_date_time: tariff.end_date_time,
+            elements: tariff
+                .elements
+                .iter()
+                .map(TariffElement::new)
+                .collect::<Result<_, Error>>()?,
+        })
     }
 }
 
@@ -88,24 +95,21 @@ impl TariffElement {
 
         Ok(element)
     }
-
-    fn is_active(&self, period: &ChargePeriod) -> Option<bool> {
-        for restriction in self.restrictions.iter() {
-            if !restriction.is_valid(period)? {
-                return Some(false);
-            }
-        }
-
-        Some(true)
-    }
 }
 
-pub struct ChargeSession {
+struct ChargeSession {
     periods: Vec<ChargePeriod>,
+    tariffs: Vec<Tariff>,
 }
 
 impl ChargeSession {
-    pub fn new(cdr: &Cdr, local_timezone: Tz) -> Self {
+    pub fn new(cdr: &Cdr, local_timezone: Tz) -> Result<Self, Error> {
+        let tariffs = cdr
+            .tariffs
+            .iter()
+            .map(Tariff::new)
+            .collect::<Result<_, _>>()?;
+
         let mut periods: Vec<ChargePeriod> = Vec::new();
 
         for (i, period) in cdr.charging_periods.iter().enumerate() {
@@ -116,74 +120,92 @@ impl ChargeSession {
             };
 
             let next = if let Some(last) = periods.last() {
-                last.next(period, end_date_time)
+                last.next(period, end_date_time)?
             } else {
-                ChargePeriod::new(local_timezone, period, end_date_time)
+                ChargePeriod::new(local_timezone, period, end_date_time)?
             };
 
             periods.push(next);
         }
 
-        Self { periods }
+        Ok(Self { periods, tariffs })
     }
 }
 
+#[derive(Debug)]
 pub struct ChargePeriod {
-    local_timezone: Tz,
-    start_date_time: DateTime,
-    end_date_time: DateTime,
-    state: ChargeState,
-    start_aggregate: ChargeAggregate,
-    end_aggregate: ChargeAggregate,
+    charge_state: ChargeState,
+    start_instant: ChargeInstant,
+    end_instant: ChargeInstant,
 }
 
 impl ChargePeriod {
-    pub fn new(local_timezone: Tz, period: &OcpiChargingPeriod, end_date_time: DateTime) -> Self {
-        let state = ChargeState::new(period);
-        let start_aggregate = ChargeAggregate::zero();
-        let end_aggregate = start_aggregate.add(period);
+    fn new(
+        local_timezone: Tz,
+        period: &OcpiChargingPeriod,
+        end_date_time: DateTime,
+    ) -> Result<Self, Error> {
+        let charge_state = ChargeState::new(period);
+        let start_instant = ChargeInstant::zero(period.start_date_time, local_timezone);
+        let end_instant = start_instant.next(period, end_date_time)?;
 
-        Self {
-            local_timezone,
-            end_date_time,
-            start_date_time: period.start_date_time,
-            state,
-            start_aggregate,
-            end_aggregate,
+        Ok(Self {
+            charge_state,
+            start_instant,
+            end_instant,
+        })
+    }
+
+    fn next(&self, period: &OcpiChargingPeriod, end_date_time: DateTime) -> Result<Self, Error> {
+        let charge_state = ChargeState::new(period);
+        let start_instant = self.end_instant;
+        let end_instant = start_instant.next(period, end_date_time)?;
+
+        Ok(Self {
+            charge_state,
+            start_instant,
+            end_instant,
+        })
+    }
+
+    fn is_tariff_active(&self, tariff: &Tariff) -> bool {
+        if let Some(start_date_time) = tariff.start_date_time {
+            if self.start_instant.date_time < start_date_time {
+                return false;
+            }
         }
-    }
 
-    pub fn next(&self, period: &OcpiChargingPeriod, end_date_time: DateTime) -> Self {
-        let state = ChargeState::new(period);
-        let start_aggregate = self.end_aggregate;
-        let end_aggregate = start_aggregate.add(period);
-
-        Self {
-            local_timezone: self.local_timezone,
-            start_date_time: period.start_date_time,
-            end_date_time,
-            state,
-            start_aggregate,
-            end_aggregate,
+        if let Some(end_date_time) = tariff.end_date_time {
+            if self.start_instant.date_time > end_date_time {
+                return false;
+            }
         }
+
+        true
     }
 
-    fn local_start_time(&self) -> NaiveTime {
-        self.start_date_time
-            .with_timezone(&self.local_timezone)
-            .time()
+    fn is_tariff_element_active(&self, element: TariffElement) -> Option<bool> {
+        for restriction in element.restrictions {
+            if !restriction.instant_validity_exclusive(&self.start_instant)? {
+                return Some(false);
+            }
+
+            if !restriction.state_validity(&self.charge_state)? {
+                return Some(false);
+            }
+        }
+
+        Some(true)
     }
 
-    fn local_start_date(&self) -> NaiveDate {
-        self.start_date_time
-            .with_timezone(&self.local_timezone)
-            .date_naive()
-    }
+    fn is_tariff_element_active_at_end(&self, element: TariffElement) -> Option<bool> {
+        for restriction in element.restrictions {
+            if !restriction.instant_validity_inclusive(&self.end_instant)? {
+                return Some(false);
+            }
+        }
 
-    fn local_start_weekday(&self) -> Weekday {
-        self.start_date_time
-            .with_timezone(&self.local_timezone)
-            .weekday()
+        Some(true)
     }
 }
 
@@ -196,36 +218,46 @@ pub struct ChargeState {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct ChargeAggregate {
+pub struct ChargeInstant {
+    local_timezone: Tz,
+    date_time: DateTime,
     duration: Option<Duration>,
     energy: Option<Number>,
 }
 
-impl ChargeAggregate {
-    pub fn zero() -> Self {
+impl ChargeInstant {
+
+    fn zero(date_time: DateTime, local_timezone: Tz) -> Self {
         Self {
+            date_time,
+            local_timezone,
             duration: Some(Duration::zero()),
             energy: Some(Number::zero()),
         }
     }
 
-    pub fn new() -> Self {
+    fn new(date_time: DateTime, local_timezone: Tz) -> Self {
         Self {
+            date_time,
+            local_timezone,
             duration: None,
             energy: None,
         }
     }
 
-    pub fn add(&self, period: &OcpiChargingPeriod) -> Self {
-        let mut result = Self::new();
+    fn next(&self, period: &OcpiChargingPeriod, date_time: DateTime) -> Result<Self, Error> {
+        let mut result = Self::new(date_time, self.local_timezone);
 
         for dimension in period.dimensions.iter() {
             match dimension.dimension_type {
                 OcpiCdrDimensionType::Time => {
-                    result.duration = self.duration.map(|duration| {
-                        let millis = dimension.volume * Decimal::from_str("3600_000").unwrap();
-                        Duration::milliseconds(millis.try_into().unwrap()) + duration
-                    });
+                    let millis: i64 = (dimension.volume * Decimal::from_str("3600_000").unwrap())
+                        .try_into()
+                        .map_err(|_| Error::DurationOverflow)?;
+
+                    result.duration = self
+                        .duration
+                        .map(|duration| Duration::milliseconds(millis) + duration)
                 }
                 OcpiCdrDimensionType::Energy => {
                     result.energy = self.energy.map(|energy| energy + dimension.volume)
@@ -234,12 +266,25 @@ impl ChargeAggregate {
             }
         }
 
-        result
+        Ok(result)
+    }
+
+    fn local_time(&self) -> NaiveTime {
+        self.date_time.with_timezone(&self.local_timezone).time()
+    }
+
+    fn local_date(&self) -> NaiveDate {
+        self.date_time
+            .with_timezone(&self.local_timezone)
+            .date_naive()
+    }
+
+    fn local_weekday(&self) -> Weekday {
+        self.date_time.with_timezone(&self.local_timezone).weekday()
     }
 }
 
 impl ChargeState {
-
     fn new(period: &OcpiChargingPeriod) -> Self {
         let mut inst = Self {
             max_current: None,
@@ -262,15 +307,11 @@ impl ChargeState {
     }
 }
 
-pub enum EventKind {
-    Activated,
-    Deactivated(Vec<Restriction>),
-}
-
 #[derive(Debug)]
 pub enum Error {
     InvalidTimeZone(chrono_tz::ParseError),
     InvalidDateTime(chrono::ParseError),
+    DurationOverflow,
 }
 
 impl From<chrono::ParseError> for Error {

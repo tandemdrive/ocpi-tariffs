@@ -6,7 +6,7 @@ use crate::ocpi::{DateTime, DisplayText, Number, Price};
 
 /// The Tariff object describes a tariff and its properties
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Tariff {
+pub struct OcpiTariff {
     pub county_code: String,
 
     pub party_id: String,
