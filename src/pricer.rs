@@ -46,6 +46,7 @@ impl Pricer {
     }
 }
 
+#[derive(Debug)]
 pub struct Report {
     pub periods: Vec<PeriodReport>,
     pub time_costs: Decimal,
@@ -66,6 +67,7 @@ impl Report {
     }
 }
 
+#[derive(Debug)]
 pub struct PeriodReport {
     pub tariff_index: usize,
     pub start_date_time: DateTime<Utc>,
@@ -88,6 +90,7 @@ impl PeriodReport {
     }
 }
 
+#[derive(Debug)]
 pub struct DimensionReport {
     pub price_component: PriceComponent,
     pub volume: Option<Decimal>,

@@ -9,6 +9,7 @@ use crate::{Error, Result};
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 
+#[derive(Debug)]
 pub struct Tariffs(Vec<Tariff>);
 
 impl Tariffs {
@@ -30,6 +31,7 @@ impl Tariffs {
     }
 }
 
+#[derive(Debug)]
 pub struct Tariff {
     pub tariff_index: usize,
     elements: Vec<TariffElement>,
