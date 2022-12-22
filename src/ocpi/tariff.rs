@@ -2,7 +2,7 @@
 
 use chrono::Weekday;
 
-use crate::ocpi::{DateTime, DisplayText, Number, Price};
+use crate::ocpi::{DateTime, Number, Price};
 
 /// The Tariff object describes a tariff and its properties
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -19,12 +19,6 @@ pub struct OcpiTariff {
 
     pub tariff_type: Option<TariffType>,
 
-    /// List of multi language alternative tariff info text
-    pub tariff_alt_text: Vec<DisplayText>,
-
-    /// Alternative URL to tariff info
-    pub tariff_alt_url: Option<()>,
-
     pub min_price: Option<Price>,
 
     pub max_price: Option<Price>,
@@ -35,12 +29,6 @@ pub struct OcpiTariff {
     pub start_date_time: Option<DateTime>,
 
     pub end_date_time: Option<DateTime>,
-
-    /// Details on the energy supplied with this tariff
-    pub energy_mix: Option<()>,
-
-    /// Timestamp when this Tariff was last updated (or created).
-    pub last_updated: DateTime,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -114,7 +102,7 @@ pub struct OcpiTariffElement {
 }
 
 /// Type of tariff component
-#[derive(Debug, Copy, PartialEq, Eq, Clone)]
+#[derive(Debug, Copy, PartialEq, Eq, Clone, Hash)]
 pub enum TariffDimensionType {
     /// Defined in kWh, step_size multiplier: 1 Wh
     Energy,
@@ -124,6 +112,10 @@ pub enum TariffDimensionType {
     ParkingTime,
     /// Time charging: defined in hours, step_size multiplier: 1 second
     Time,
+}
+
+impl TariffDimensionType {
+    pub const NUM_VARIANTS: usize = 4;
 }
 
 /// Indicates when a tariff applies

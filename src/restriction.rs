@@ -3,12 +3,12 @@ use std::collections::HashSet;
 use chrono::{Duration, NaiveDate, NaiveTime, Timelike, Weekday};
 
 use crate::ocpi::tariff::OcpiTariffRestriction;
-use crate::ocpi::Number;
-use crate::{ChargeInstant, ChargeState, Error};
+use crate::session::{ChargeInstant, ChargeState};
+use crate::{Error, Result};
 
-pub fn collect_restrictions(
-    restriction: &OcpiTariffRestriction,
-) -> Result<Vec<Restriction>, Error> {
+use rust_decimal::Decimal;
+
+pub fn collect_restrictions(restriction: &OcpiTariffRestriction) -> Result<Vec<Restriction>> {
     let mut collected = Vec::new();
 
     match (&restriction.start_time, &restriction.end_time) {
@@ -78,7 +78,7 @@ pub fn collect_restrictions(
     Ok(collected)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Restriction {
     StartTime(NaiveTime),
     EndTime(NaiveTime),
@@ -88,12 +88,12 @@ pub enum Restriction {
     },
     StartDate(NaiveDate),
     EndDate(NaiveDate),
-    MinKwh(Number),
-    MaxKwh(Number),
-    MinCurrent(Number),
-    MaxCurrent(Number),
-    MinPower(Number),
-    MaxPower(Number),
+    MinKwh(Decimal),
+    MaxKwh(Decimal),
+    MinCurrent(Decimal),
+    MaxCurrent(Decimal),
+    MinPower(Decimal),
+    MaxPower(Decimal),
     MinDuration(Duration),
     MaxDuration(Duration),
     DayOfWeek(HashSet<Weekday>),
@@ -101,11 +101,10 @@ pub enum Restriction {
 }
 
 impl Restriction {
-
     /// Checks if this restriction is valid at `instant`. The time based restrictions are
     /// treated as exclusive comparisons.
-    pub fn instant_validity_exclusive(&self, instant: &ChargeInstant) -> Option<bool> {
-        match self {
+    pub fn instant_validity_exclusive(&self, instant: &ChargeInstant) -> Result<bool> {
+        let validity = match self {
             &Self::WrappingTime {
                 start_time,
                 end_time,
@@ -114,22 +113,24 @@ impl Restriction {
             &Self::EndTime(end_time) => Some(instant.local_time() < end_time),
             &Self::StartDate(start_date) => Some(instant.local_date() >= start_date),
             &Self::EndDate(end_date) => Some(instant.local_date() < end_date),
-            &Self::MinKwh(min_energy) => instant.energy.map(|energy| energy >= min_energy),
-            &Self::MaxKwh(max_energy) => instant.energy.map(|energy| energy < max_energy),
-            &Self::MinDuration(min_duration) => {
-                instant.duration.map(|duration| duration >= min_duration)
-            }
-            &Self::MaxDuration(max_duration) => {
-                instant.duration.map(|duration| duration < max_duration)
-            }
+            &Self::MinKwh(min_energy) => instant.total_energy.map(|energy| energy >= min_energy),
+            &Self::MaxKwh(max_energy) => instant.total_energy.map(|energy| energy < max_energy),
+            &Self::MinDuration(min_duration) => instant
+                .total_duration
+                .map(|duration| duration >= min_duration),
+            &Self::MaxDuration(max_duration) => instant
+                .total_duration
+                .map(|duration| duration < max_duration),
             Self::DayOfWeek(days) => Some(days.contains(&instant.local_weekday())),
             _ => Some(true),
-        }
+        };
+
+        validity.ok_or_else(|| Error::MissingRestrictionDimension(self.clone()))
     }
 
     /// Checks if this restriction is valid for `state`.
-    pub fn state_validity(&self, state: &ChargeState) -> Option<bool> {
-        match self {
+    pub fn state_validity(&self, state: &ChargeState) -> Result<bool> {
+        let validity = match self {
             &Self::MinCurrent(min_current) => {
                 state.min_current.map(|current| current >= min_current)
             }
@@ -140,7 +141,9 @@ impl Restriction {
             &Self::MaxPower(max_power) => state.max_power.map(|power| power < max_power),
             &Self::Reservation => todo!(),
             _ => Some(true),
-        }
+        };
+
+        validity.ok_or_else(|| Error::MissingRestrictionDimension(self.clone()))
     }
 
     /// Checks if this restriction is valid at `instant`. The time based restriction are treated as
@@ -148,8 +151,8 @@ impl Restriction {
     ///
     /// For example an instant at 00:00 on a tuesday is regarded as valid for a restriction that
     /// has a `DayOfWeek` which includes monday.
-    pub fn instant_validity_inclusive(&self, instant: &ChargeInstant) -> Option<bool> {
-        match self {
+    pub fn instant_validity_inclusive(&self, instant: &ChargeInstant) -> Result<bool> {
+        let validity = match self {
             &Self::WrappingTime {
                 start_time,
                 end_time,
@@ -166,14 +169,14 @@ impl Restriction {
 
                 Some(is_before_end_date || (is_on_end_date && is_at_midnight))
             }
-            &Self::MinKwh(min_energy) => instant.energy.map(|energy| energy >= min_energy),
-            &Self::MaxKwh(max_energy) => instant.energy.map(|energy| energy < max_energy),
-            &Self::MinDuration(min_duration) => {
-                instant.duration.map(|duration| duration >= min_duration)
-            }
-            &Self::MaxDuration(max_duration) => {
-                instant.duration.map(|duration| duration < max_duration)
-            }
+            &Self::MinKwh(min_energy) => instant.total_energy.map(|energy| energy >= min_energy),
+            &Self::MaxKwh(max_energy) => instant.total_energy.map(|energy| energy < max_energy),
+            &Self::MinDuration(min_duration) => instant
+                .total_duration
+                .map(|duration| duration >= min_duration),
+            &Self::MaxDuration(max_duration) => instant
+                .total_duration
+                .map(|duration| duration < max_duration),
             Self::DayOfWeek(days) => {
                 let includes_weekday = days.contains(&instant.local_weekday());
                 let includes_day_before = days.contains(&instant.local_weekday().pred());
@@ -182,6 +185,8 @@ impl Restriction {
                 Some(includes_weekday || (includes_day_before && is_at_midnight))
             }
             _ => Some(true),
-        }
+        };
+
+        validity.ok_or_else(|| Error::MissingRestrictionDimension(self.clone()))
     }
 }
