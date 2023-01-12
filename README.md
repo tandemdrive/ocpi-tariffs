@@ -4,16 +4,16 @@ This crate implements a price calculator for [OCPI][ocpi] [tariffs][tariffs]. Sp
 
 ## Goals
 
-- Provide a reference implementation of a price calculator for [charge session]() given a set of tariffs.
+- Provide a reference implementation of a price calculator for a [CDR](https://github.com/ocpi/ocpi/blob/2.2.1/mod_cdrs.asciidoc) given a set of tariffs.
 
 ## Non-goals
 
 - Implement an HTTP API conforming to the OCPI specification.
-- Implement a directly human consumable invoice specifying the different cost components leading to the calculated total price.
+- Implement a human consumable invoice specifying the different cost components leading to the calculated total price.
 
 ## Tariff structure overview
 
-``` mermaid
+```mermaid
 classDiagram
     class Tariff {
         TariffElement elements
@@ -27,16 +27,15 @@ classDiagram
         Number price
         Number vat
         int step_size
-
     }
     class TariffRestriction {
         DayOfWeek day_of_week
+        ...
     }
     Tariff "1" --o "1.." TariffElement
     TariffElement "1" --o "1.." PriceComponent
     TariffElement "1" --o "0..1" TariffRestriction
 ```
-
 
 [ocpi]: https://evroaming.org/ocpi-background/
 [ocpi-gh]: https://github.com/ocpi/ocpi
