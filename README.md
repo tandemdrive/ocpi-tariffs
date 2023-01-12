@@ -32,7 +32,7 @@ classDiagram
     class TariffRestriction {
         DayOfWeek day_of_week
     }
-    Tariff "1" --o "+" TariffElement
+    Tariff "1" --o "1.." TariffElement
     TariffElement "1" --o "1.." PriceComponent
     TariffElement "1" --o "0..1" TariffRestriction
 ```
