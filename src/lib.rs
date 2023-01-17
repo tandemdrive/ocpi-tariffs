@@ -38,9 +38,7 @@ mod tests {
     use crate::{
         ocpi::{
             cdr::{Cdr, OcpiCdrDimension, OcpiCdrDimensionType, OcpiChargingPeriod},
-            tariff::{
-                OcpiPriceComponent, OcpiTariff, OcpiTariffElement, TariffDimensionType, TariffType,
-            },
+            tariff::{OcpiPriceComponent, OcpiTariff, OcpiTariffElement, TariffDimensionType},
         },
         pricer::Pricer,
     };
