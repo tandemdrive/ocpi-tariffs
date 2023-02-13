@@ -126,11 +126,11 @@ impl TariffElement {
 
     fn is_active(&self, period: &ChargePeriod) -> Result<bool> {
         for restriction in self.restrictions.iter() {
-            if !restriction.instant_validity_exclusive(&period.start_instant)? {
+            if !restriction.instant_validity_exclusive(&period.start_instant) {
                 return Ok(false);
             }
 
-            if !restriction.state_validity(&period.charge_state)? {
+            if !restriction.period_validity(&period.period_data)? {
                 return Ok(false);
             }
         }
@@ -138,14 +138,14 @@ impl TariffElement {
         Ok(true)
     }
 
-    fn is_active_at_end(&self, period: &ChargePeriod) -> Result<bool> {
+    fn is_active_at_end(&self, period: &ChargePeriod) -> bool {
         for restriction in self.restrictions.iter() {
-            if !restriction.instant_validity_inclusive(&period.end_instant)? {
-                return Ok(false);
+            if !restriction.instant_validity_inclusive(&period.end_instant) {
+                return false;
             }
         }
 
-        Ok(true)
+        true
     }
 }
 
