@@ -1,13 +1,16 @@
 //! The Tariff object describes a tariff and its properties
 
 use chrono::Weekday;
+use serde::Deserialize;
 
-use crate::ocpi::{DateTime, Number, Price};
+use crate::types::{
+    Ampere, DateTime, Kw, Kwh, Number, Price, SecondsRound, OcpiDate, OcpiTime, Money,
+};
 
 /// The Tariff object describes a tariff and its properties
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct OcpiTariff {
-    pub county_code: String,
+    pub country_code: String,
 
     pub party_id: String,
 
@@ -31,7 +34,7 @@ pub struct OcpiTariff {
     pub end_date_time: Option<DateTime>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum TariffType {
     AdHocPayment,
     ProfileCheap,
@@ -41,7 +44,8 @@ pub enum TariffType {
 }
 
 /// Weekday enum
-#[derive(Debug, Copy, PartialEq, Eq, Clone, Hash)]
+#[derive(Debug, Copy, PartialEq, Eq, Clone, Hash, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DayOfWeek {
     /// Monday
     Monday,
@@ -74,13 +78,14 @@ impl From<DayOfWeek> for Weekday {
 }
 
 /// Component of a tariff price
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct OcpiPriceComponent {
     /// Type of tariff dimension
+    #[serde(rename = "type")]
     pub component_type: TariffDimensionType,
 
     /// Price per unit (excluding VAT) for this tariff dimension
-    pub price: Number,
+    pub price: Money,
 
     pub vat: Option<Number>,
 
@@ -92,7 +97,7 @@ pub struct OcpiPriceComponent {
 }
 
 /// Describes part of a tariff
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct OcpiTariffElement {
     /// List of price components that make up the pricing of this tariff
     pub price_components: Vec<OcpiPriceComponent>,
@@ -102,7 +107,8 @@ pub struct OcpiTariffElement {
 }
 
 /// Type of tariff component
-#[derive(Debug, Copy, PartialEq, Eq, Clone, Hash)]
+#[derive(Debug, Copy, PartialEq, Eq, Clone, Hash, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum TariffDimensionType {
     /// Defined in kWh, step_size multiplier: 1 Wh
     Energy,
@@ -114,57 +120,55 @@ pub enum TariffDimensionType {
     Time,
 }
 
-impl TariffDimensionType {
-    pub const NUM_VARIANTS: usize = 4;
-}
-
 /// Indicates when a tariff applies
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct OcpiTariffRestriction {
     /// Start time of day, for example 13:30, valid from this time of the day.
     /// Must be in 24h format with leading zeros. Hour/Minute separator: “:” Regex
-    pub start_time: Option<String>,
+    pub start_time: Option<OcpiTime>,
 
     /// End time of day, for example 19:45, valid until this
     /// time of the day. Same syntax as start_time
-    pub end_time: Option<String>,
+    pub end_time: Option<OcpiTime>,
 
     /// Start date, for example: 2015-12-24, valid from this day
-    pub start_date: Option<String>,
+    pub start_date: Option<OcpiDate>,
 
     /// End date, for example: 2015-12-27, valid until thisday (excluding this day)
-    pub end_date: Option<String>,
+    pub end_date: Option<OcpiDate>,
 
     /// Minimum used energy in kWh, for example 20, valid from this amount of energy is used
-    pub min_kwh: Option<Number>,
+    pub min_kwh: Option<Kwh>,
 
     /// Maximum used energy in kWh, for example 50, valid until this amount of energy is used
-    pub max_kwh: Option<Number>,
+    pub max_kwh: Option<Kwh>,
 
-    pub min_current: Option<Number>,
+    pub min_current: Option<Ampere>,
 
-    pub max_current: Option<Number>,
+    pub max_current: Option<Ampere>,
 
     /// Minimum power in kW, for example 0, valid from this charging speed
-    pub min_power: Option<Number>,
+    pub min_power: Option<Kw>,
 
     /// Maximum power in kW, for example 20, valid up to this charging speed
-    pub max_power: Option<Number>,
+    pub max_power: Option<Kw>,
 
     /// Minimum duration in seconds, valid for a duration from x seconds
-    pub min_duration: Option<i64>,
+    pub min_duration: Option<SecondsRound>,
 
     /// Maximum duration in seconds, valid for a duration up to x seconds
-    pub max_duration: Option<i64>,
+    pub max_duration: Option<SecondsRound>,
 
     /// Which day(s) of the week this tariff is valid
+    #[serde(default)]
     pub day_of_week: Vec<DayOfWeek>,
 
     pub reservation: Option<ReservationRestrictionType>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ReservationRestrictionType {
     Reservation,
-    ReservationExpiress,
+    ReservationExpires,
 }

@@ -1,0 +1,33 @@
+{
+    "start_date_time": "2022-01-13T16:00:00Z",
+    "stop_date_time": "2022-01-13T19:12:00Z",
+    "currency": "EUR",
+    "tariffs": [],
+    "charging_periods": [
+        {
+            "start_date_time": "2022-01-13T16:00:00Z",
+            "dimensions": [
+                {
+                    "type": "TIME",
+                    "volume": 2.5 
+                }
+            ]
+        },
+        {
+            "start_date_time": "2022-01-13T18:30:00Z",
+            "dimensions": [
+                {
+                    "type": "PARKING_TIME",
+                    "volume": 0.7
+                }
+            ]
+        }
+    ],
+    "total_cost": {
+        "excl_vat": 11.25,
+        "incl_vat": 12.75
+    },
+    "total_time": 4.2,
+    "total_energy": 0,
+    "last_updated": "2022-01-13T00:00:00Z"
+}

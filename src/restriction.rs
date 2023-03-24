@@ -4,37 +4,37 @@ use chrono::{Duration, NaiveDate, NaiveTime, Timelike, Weekday};
 
 use crate::ocpi::tariff::OcpiTariffRestriction;
 use crate::session::{InstantData, PeriodData};
-use crate::{Error, Result};
+use crate::types::{Ampere, Kw, Kwh};
 
-use rust_decimal::Decimal;
-
-pub fn collect_restrictions(restriction: &OcpiTariffRestriction) -> Result<Vec<Restriction>> {
+pub fn collect_restrictions(restriction: &OcpiTariffRestriction) -> Vec<Restriction> {
     let mut collected = Vec::new();
 
-    match (&restriction.start_time, &restriction.end_time) {
-        (Some(start_time), Some(end_time)) if end_time < start_time => {
+    match (restriction.start_time, restriction.end_time) {
+        (Some(start_time), Some(end_time))
+            if NaiveTime::from(end_time) < NaiveTime::from(start_time) =>
+        {
             collected.push(Restriction::WrappingTime {
-                start_time: start_time.parse()?,
-                end_time: end_time.parse()?,
+                start_time: start_time.into(),
+                end_time: end_time.into(),
             })
         }
         (start_time, end_time) => {
             if let Some(start_time) = start_time {
-                collected.push(Restriction::StartTime(start_time.parse()?))
+                collected.push(Restriction::StartTime(start_time.into()))
             }
 
             if let Some(end_time) = end_time {
-                collected.push(Restriction::EndTime(end_time.parse()?))
+                collected.push(Restriction::EndTime(end_time.into()))
             }
         }
     }
 
-    if let Some(start_date) = &restriction.start_date {
-        collected.push(Restriction::StartDate(start_date.parse()?))
+    if let Some(start_date) = restriction.start_date {
+        collected.push(Restriction::StartDate(start_date.into()))
     }
 
-    if let Some(end_date) = &restriction.end_date {
-        collected.push(Restriction::EndDate(end_date.parse()?))
+    if let Some(end_date) = restriction.end_date {
+        collected.push(Restriction::EndDate(end_date.into()))
     }
 
     if let Some(min_kwh) = restriction.min_kwh {
@@ -62,11 +62,11 @@ pub fn collect_restrictions(restriction: &OcpiTariffRestriction) -> Result<Vec<R
     }
 
     if let Some(min_duration) = restriction.min_duration {
-        collected.push(Restriction::MinDuration(Duration::seconds(min_duration)))
+        collected.push(Restriction::MinDuration(min_duration.into()))
     }
 
     if let Some(max_duration) = restriction.max_duration {
-        collected.push(Restriction::MaxDuration(Duration::seconds(max_duration)))
+        collected.push(Restriction::MaxDuration(max_duration.into()))
     }
 
     if !restriction.day_of_week.is_empty() {
@@ -75,7 +75,7 @@ pub fn collect_restrictions(restriction: &OcpiTariffRestriction) -> Result<Vec<R
         )))
     }
 
-    Ok(collected)
+    collected
 }
 
 #[derive(Debug, Clone)]
@@ -88,12 +88,12 @@ pub enum Restriction {
     },
     StartDate(NaiveDate),
     EndDate(NaiveDate),
-    MinKwh(Decimal),
-    MaxKwh(Decimal),
-    MinCurrent(Decimal),
-    MaxCurrent(Decimal),
-    MinPower(Decimal),
-    MaxPower(Decimal),
+    MinKwh(Kwh),
+    MaxKwh(Kwh),
+    MinCurrent(Ampere),
+    MaxCurrent(Ampere),
+    MinPower(Kw),
+    MaxPower(Kw),
     MinDuration(Duration),
     MaxDuration(Duration),
     DayOfWeek(HashSet<Weekday>),
@@ -160,20 +160,26 @@ impl Restriction {
     }
 
     /// Checks if this restriction is valid for `state`.
-    pub fn period_validity(&self, state: &PeriodData) -> Result<bool> {
-        let validity = match self {
-            &Self::MinCurrent(min_current) => {
-                state.min_current.map(|current| current >= min_current)
-            }
-            &Self::MaxCurrent(max_current) => {
-                state.max_current.map(|current| current < max_current)
-            }
-            &Self::MinPower(min_power) => state.min_power.map(|power| power >= min_power),
-            &Self::MaxPower(max_power) => state.max_power.map(|power| power < max_power),
+    pub fn period_validity(&self, state: &PeriodData) -> bool {
+        match self {
+            &Self::MinCurrent(min_current) => state
+                .min_current
+                .map(|current| current >= min_current)
+                .unwrap_or(true),
+            &Self::MaxCurrent(max_current) => state
+                .max_current
+                .map(|current| current < max_current)
+                .unwrap_or(true),
+            &Self::MinPower(min_power) => state
+                .min_power
+                .map(|power| power >= min_power)
+                .unwrap_or(true),
+            &Self::MaxPower(max_power) => state
+                .max_power
+                .map(|power| power < max_power)
+                .unwrap_or(true),
             &Self::Reservation => todo!(),
-            _ => Some(true),
-        };
-
-        validity.ok_or_else(|| Error::MissingRestrictionDimension(self.clone()))
+            _ => true,
+        }
     }
 }

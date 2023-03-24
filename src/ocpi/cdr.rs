@@ -1,8 +1,11 @@
+use serde::Deserialize;
+
 use crate::ocpi::tariff::OcpiTariff;
-use crate::ocpi::{DateTime, Number, Price};
+
+use crate::types::{Ampere, DateTime, HoursDecimal, Kw, Kwh, Price};
 
 /// The CDR object describes the Charging Session and its costs. How these costs are build up etc.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Cdr {
     /// Start timestamp of the charging session
     pub start_date_time: DateTime,
@@ -21,22 +24,22 @@ pub struct Cdr {
     pub charging_periods: Vec<OcpiChargingPeriod>,
 
     /// Total cost of this transaction
-    pub total_cost: Number,
+    pub total_cost: Price,
 
     pub total_fixed_cost: Option<Price>,
 
     /// Total energy charged, in kWh
-    pub total_energy: Number,
+    pub total_energy: Kwh,
 
     pub total_energy_cost: Option<Price>,
 
     /// Total time charging, in hours
-    pub total_time: Number,
+    pub total_time: HoursDecimal,
 
     pub total_time_cost: Option<Price>,
 
     /// Total time not charging, in hours
-    pub total_parking_time: Option<Number>,
+    pub total_parking_time: Option<HoursDecimal>,
 
     pub total_parking_cost: Option<Price>,
 
@@ -46,15 +49,21 @@ pub struct Cdr {
     pub last_updated: DateTime,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OcpiCdrDimension {
-    /// Type of cdr dimension
-    pub dimension_type: OcpiCdrDimensionType,
-    /// Volume of the dimension consumed, measuredaccording to the dimension type
-    pub volume: Number,
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE", tag = "type", content = "volume")]
+pub enum OcpiCdrDimension {
+    Energy(Kwh),
+    MaxCurrent(Ampere),
+    MinCurrent(Ampere),
+    MaxPower(Kw),
+    MinPower(Kw),
+    ParkingTime(HoursDecimal),
+    ReservationTime(HoursDecimal),
+    Time(HoursDecimal),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum OcpiCdrDimensionType {
     Energy,
     MaxCurrent,
@@ -66,7 +75,7 @@ pub enum OcpiCdrDimensionType {
     Time,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct OcpiChargingPeriod {
     /// Start timestamp of the charging period. Thisperiod ends when a next period starts, the
     /// lastperiod ends when the session ends

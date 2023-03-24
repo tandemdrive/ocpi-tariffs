@@ -1,0 +1,32 @@
+{
+    "start_date_time": "2022-01-13T14:30:00Z",
+    "stop_date_time": "2022-01-13T15:30:00Z",
+    "currency": "EUR",
+    "tariffs": [],
+    "charging_periods": [
+        {
+            "start_date_time": "2022-01-13T14:30:00Z",
+            "dimensions": [
+                {
+                    "type": "ENERGY",
+                    "volume": 20
+                }
+            ]
+        }
+    ],
+    "total_cost": {
+        "excl_vat": 5.5,
+        "incl_vat": 6.1
+    },
+    "total_energy": 20,
+    "total_energy_cost" : {
+        "excl_vat": 5,
+        "incl_vat": 5.5
+    },
+    "total_fixed_cost": {
+        "excl_vat": 0.5,
+        "incl_vat": 0.6
+    },
+    "total_time": 1,
+    "last_updated": "2022-01-13T00:00:00Z"
+}
