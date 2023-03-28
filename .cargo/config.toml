@@ -1,0 +1,30 @@
+[build]
+target-dir = "target"
+rustdocflags = [
+    "-Arustdoc::private_intra_doc_links",
+    "-Drustdoc::broken_intra_doc_links",
+]
+
+[target.'cfg(all())']
+rustflags = [
+    # https://doc.rust-lang.org/rustc/lints/index.html
+    "-Dtrivial_casts",
+    "-Dtrivial_numeric_casts",
+    "-Dunsafe_code",
+    "-Wfuture_incompatible",
+    "-Wlet_underscore",
+    "-Wrust_2018_compatibility",
+    "-Wrust_2018_idioms",
+    "-Wrust_2021_compatibility",
+    "-Wunused_import_braces",
+    "-Wunused_qualifications",
+
+    # https://rust-lang.github.io/rust-clippy/master/index.html
+    "-Aclippy::doc_markdown",
+    "-Dclippy::dbg_macro",
+    "-Dclippy::todo",
+    "-Dclippy::unimplemented",
+    "-Wclippy::checked_conversions",
+    "-Wclippy::debug_assert_with_mut_call",
+    "-Wclippy::enum_glob_use",
+]
