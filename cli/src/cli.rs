@@ -6,7 +6,7 @@ use colored::Colorize;
 use ocpi_tariffs::{
     ocpi::{cdr::Cdr, tariff::OcpiTariff},
     pricer::{Pricer, Report},
-    types::Price,
+    types::money::Price,
 };
 use tabled::{Style, Table, Tabled};
 
@@ -190,26 +190,35 @@ impl Validate {
 
         let mut table = ValidateTable { rows: Vec::new() };
 
-        table.price_row(report.total_cost, Some(cdr.total_cost), "Cost");
+        table.row(report.total_time.into(), Some(cdr.total_time), "Total Time");
+        table.row(
+            report.total_parking_time.into(),
+            cdr.total_parking_time,
+            "Total Parking time",
+        );
+        table.row(report.total_energy, Some(cdr.total_energy), "Total Energy");
 
-        table.price_row(report.total_time_cost, cdr.total_time_cost, "Time cost");
-        table.price_row(report.total_fixed_cost, cdr.total_fixed_cost, "Fixed cost");
+        table.price_row(report.total_cost, Some(cdr.total_cost), "Total Cost");
+
+        table.price_row(
+            report.total_time_cost,
+            cdr.total_time_cost,
+            "Total Time cost",
+        );
+        table.price_row(
+            report.total_fixed_cost,
+            cdr.total_fixed_cost,
+            "Total Fixed cost",
+        );
         table.price_row(
             report.total_energy_cost,
             cdr.total_energy_cost,
-            "Energy cost",
+            "Total Energy cost",
         );
         table.price_row(
             report.total_parking_cost,
             cdr.total_parking_cost,
-            "Parking cost",
-        );
-        table.row(report.total_time.into(), Some(cdr.total_time), "Time");
-        table.row(report.total_energy, Some(cdr.total_energy), "Energy");
-        table.row(
-            report.total_parking_time.into(),
-            cdr.total_parking_time,
-            "Parking time",
+            "Total Parking cost",
         );
 
         println!(

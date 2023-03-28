@@ -4,15 +4,13 @@ use chrono::{Duration, NaiveDate, NaiveTime, Timelike, Weekday};
 
 use crate::ocpi::tariff::OcpiTariffRestriction;
 use crate::session::{InstantData, PeriodData};
-use crate::types::{Ampere, Kw, Kwh};
+use crate::types::electricity::{Ampere, Kw, Kwh};
 
 pub fn collect_restrictions(restriction: &OcpiTariffRestriction) -> Vec<Restriction> {
     let mut collected = Vec::new();
 
     match (restriction.start_time, restriction.end_time) {
-        (Some(start_time), Some(end_time))
-            if NaiveTime::from(end_time) < NaiveTime::from(start_time) =>
-        {
+        (Some(start_time), Some(end_time)) if end_time < start_time => {
             collected.push(Restriction::WrappingTime {
                 start_time: start_time.into(),
                 end_time: end_time.into(),
@@ -164,20 +162,12 @@ impl Restriction {
         match self {
             &Self::MinCurrent(min_current) => state
                 .min_current
-                .map(|current| current >= min_current)
-                .unwrap_or(true),
+                .map_or(true, |current| current >= min_current),
             &Self::MaxCurrent(max_current) => state
                 .max_current
-                .map(|current| current < max_current)
-                .unwrap_or(true),
-            &Self::MinPower(min_power) => state
-                .min_power
-                .map(|power| power >= min_power)
-                .unwrap_or(true),
-            &Self::MaxPower(max_power) => state
-                .max_power
-                .map(|power| power < max_power)
-                .unwrap_or(true),
+                .map_or(true, |current| current < max_current),
+            &Self::MinPower(min_power) => state.min_power.map_or(true, |power| power >= min_power),
+            &Self::MaxPower(max_power) => state.max_power.map_or(true, |power| power < max_power),
             &Self::Reservation => todo!(),
             _ => true,
         }

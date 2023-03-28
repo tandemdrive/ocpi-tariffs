@@ -2,43 +2,35 @@ use crate::ocpi::tariff::{OcpiPriceComponent, OcpiTariff, OcpiTariffElement, Tar
 
 use crate::restriction::{collect_restrictions, Restriction};
 use crate::session::ChargePeriod;
-use crate::types::{DateTime, Money};
-use crate::{Error, Result};
+use crate::types::money::Vat;
+use crate::types::{money::Money, time::DateTime};
 
-use rust_decimal::Decimal;
 
 #[derive(Debug)]
 pub struct Tariffs(Vec<Tariff>);
 
 impl Tariffs {
     pub fn new(tariffs: &[OcpiTariff]) -> Self {
-        Self(
-            tariffs
-                .iter()
-                .enumerate()
-                .map(|(i, t)| Tariff::new(t, i))
-                .collect(),
-        )
+        Self(tariffs.iter().map(Tariff::new).collect())
     }
 
-    pub fn active_tariff(&self, start_time: DateTime) -> Result<&Tariff> {
+    pub fn active_tariff(&self, start_time: DateTime) -> Option<(usize, &Tariff)> {
         self.0
             .iter()
-            .find(|t| t.is_active(start_time))
-            .ok_or(Error::NoValidTariff)
+            .position(|t| t.is_active(start_time))
+            .map(|i| (i, &self.0[i]))
     }
 }
 
 #[derive(Debug)]
 pub struct Tariff {
-    pub tariff_index: usize,
     elements: Vec<TariffElement>,
     start_date_time: Option<DateTime>,
     end_date_time: Option<DateTime>,
 }
 
 impl Tariff {
-    fn new(tariff: &OcpiTariff, tariff_index: usize) -> Self {
+    fn new(tariff: &OcpiTariff) -> Self {
         let elements = tariff
             .elements
             .iter()
@@ -49,7 +41,6 @@ impl Tariff {
         Self {
             start_date_time: tariff.start_date_time,
             end_date_time: tariff.end_date_time,
-            tariff_index,
             elements,
         }
     }
@@ -86,12 +77,11 @@ impl Tariff {
         components
     }
 
-    fn is_active(&self, start_time: DateTime) -> bool {
-        if let Some(tariff_start_time) = self.start_date_time {
-            return start_time >= tariff_start_time;
-        }
+    pub fn is_active(&self, start_time: DateTime) -> bool {
+        let is_after_start = self.start_date_time.map_or(true, |s| start_time >= s);
+        let is_before_end = self.end_date_time.map_or(true, |s| start_time < s);
 
-        true
+        is_after_start && is_before_end
     }
 }
 
@@ -130,7 +120,7 @@ impl TariffElement {
         }
     }
 
-    fn is_active(&self, period: &ChargePeriod) -> bool {
+    pub fn is_active(&self, period: &ChargePeriod) -> bool {
         for restriction in self.restrictions.iter() {
             if !restriction.instant_validity_exclusive(&period.start_instant) {
                 return false;
@@ -144,7 +134,7 @@ impl TariffElement {
         true
     }
 
-    fn is_active_at_end(&self, period: &ChargePeriod) -> bool {
+    pub fn is_active_at_end(&self, period: &ChargePeriod) -> bool {
         for restriction in self.restrictions.iter() {
             if !restriction.instant_validity_inclusive(&period.end_instant) {
                 return false;
@@ -185,7 +175,7 @@ impl PriceComponents {
 pub struct PriceComponent {
     pub tariff_element_index: usize,
     pub price: Money,
-    pub vat: Option<Decimal>,
+    pub vat: Option<Vat>,
     pub step_size: u64,
 }
 

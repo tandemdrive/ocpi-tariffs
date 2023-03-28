@@ -27,7 +27,16 @@
         "excl_vat": 11.25,
         "incl_vat": 12.75
     },
-    "total_time": 4.2,
+    "total_time_cost": {
+        "excl_vat": 7.5,
+        "incl_vat": 8.25
+    },
+    "total_parking_time": 0.7,
+    "total_parking_cost": {
+        "excl_vat": 3.75,
+        "incl_vat": 4.5
+    },
+    "total_time": 3.2,
     "total_energy": 0,
     "last_updated": "2022-01-13T00:00:00Z"
 }
