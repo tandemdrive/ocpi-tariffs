@@ -113,7 +113,7 @@ impl InstantData {
     }
 
     fn next(&self, state: &PeriodData, date_time: DateTime) -> Self {
-        let mut next = self.clone();
+        let mut next = *self;
 
         next.date_time = date_time;
 
@@ -122,7 +122,7 @@ impl InstantData {
         }
 
         if let Some(energy) = state.energy {
-            next.total_energy = next.total_energy + energy;
+            next.total_energy += energy;
         }
 
         next

@@ -83,7 +83,7 @@ impl Pricer {
         let stop_time = periods.last().unwrap().end_date_time;
 
         // total time in hours
-        report.total_time = (stop_time - start_time).into();
+        report.total_time = stop_time - start_time;
 
         report.periods = periods;
 

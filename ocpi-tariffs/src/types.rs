@@ -173,8 +173,7 @@ impl<'de> Deserialize<'de> for OcpiDate {
         use serde::de::Error;
 
         let s = <String as Deserialize>::deserialize(deserializer)?;
-        let date =
-            chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").map_err(|e| D::Error::custom(e))?;
+        let date = chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").map_err(D::Error::custom)?;
 
         Ok(Self(date))
     }
@@ -197,8 +196,7 @@ impl<'de> Deserialize<'de> for OcpiTime {
         use serde::de::Error;
 
         let s = <String as Deserialize>::deserialize(deserializer)?;
-        let date =
-            chrono::NaiveTime::parse_from_str(&s, "%H:%M").map_err(|e| D::Error::custom(e))?;
+        let date = chrono::NaiveTime::parse_from_str(&s, "%H:%M").map_err(D::Error::custom)?;
 
         Ok(Self(date))
     }

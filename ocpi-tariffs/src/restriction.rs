@@ -161,24 +161,24 @@ impl Restriction {
 
     /// Checks if this restriction is valid for `state`.
     pub fn period_validity(&self, state: &PeriodData) -> bool {
-        match self {
-            &Self::MinCurrent(min_current) => state
+        match *self {
+            Self::MinCurrent(min_current) => state
                 .min_current
                 .map(|current| current >= min_current)
                 .unwrap_or(true),
-            &Self::MaxCurrent(max_current) => state
+            Self::MaxCurrent(max_current) => state
                 .max_current
                 .map(|current| current < max_current)
                 .unwrap_or(true),
-            &Self::MinPower(min_power) => state
+            Self::MinPower(min_power) => state
                 .min_power
                 .map(|power| power >= min_power)
                 .unwrap_or(true),
-            &Self::MaxPower(max_power) => state
+            Self::MaxPower(max_power) => state
                 .max_power
                 .map(|power| power < max_power)
                 .unwrap_or(true),
-            &Self::Reservation => todo!(),
+            Self::Reservation => todo!(),
             _ => true,
         }
     }
