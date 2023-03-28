@@ -2,7 +2,6 @@
 members = ["cli", "ocpi-tariffs"]
 
 [workspace.dependencies]
-
 ocpi-tariffs = { path = "ocpi-tariffs", version = "0.1.0" }
 cli = { path = "cli", package = "ocpi-tariffs-cli", version = "0.1.0" }
 
@@ -16,4 +15,3 @@ thiserror = { version = "1.0.40" }
 serde_json = { version = "1.0" }
 console = { version = "0.15.5" }
 tabled = { version = "0.10.0", features = ["color"] }
-
