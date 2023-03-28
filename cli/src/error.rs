@@ -12,8 +12,6 @@ pub enum Error {
         kind: &'static str,
         error: serde_json::Error,
     },
-    #[error("Invalid timezone `{0}`")]
-    Timezone(String),
     #[error("{0:?}")]
     Internal(ocpi_tariffs::Error),
 }

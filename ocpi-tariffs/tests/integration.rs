@@ -1,4 +1,3 @@
-
 mod common;
 
 #[test]
@@ -17,7 +16,7 @@ fn test_json_files() {
                 common::validate_cdr(cdr, tariff.clone()).unwrap();
             });
 
-            if let Err(_) = result {
+            if result.is_err() {
                 should_panic = true;
             } else {
                 eprintln!("success")

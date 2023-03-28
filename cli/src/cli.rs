@@ -71,13 +71,13 @@ pub struct TariffArgs {
 }
 
 impl TariffArgs {
-    fn cdr_name(&self) -> Cow<str> {
+    fn cdr_name(&self) -> Cow<'_, str> {
         self.cdr.as_ref().map_or("<stdin>".into(), |c| {
             c.file_name().unwrap().to_string_lossy()
         })
     }
 
-    fn tariff_name(&self) -> Cow<str> {
+    fn tariff_name(&self) -> Cow<'_, str> {
         self.tariff.as_ref().map_or("<CDR-tariff>".into(), |c| {
             c.file_name().unwrap().to_string_lossy()
         })
@@ -85,7 +85,7 @@ impl TariffArgs {
 
     fn load_all(&self) -> Result<(Report, Cdr, Option<OcpiTariff>)> {
         let cdr: Cdr = if let Some(cdr_path) = &self.cdr {
-            let file = File::open(&cdr_path).map_err(|e| Error::file(cdr_path.clone(), e))?;
+            let file = File::open(cdr_path).map_err(|e| Error::file(cdr_path.clone(), e))?;
             serde_json::from_reader(&file)
                 .map_err(|e| Error::deserialize(cdr_path.display(), "CDR", e))?
         } else {
@@ -95,7 +95,7 @@ impl TariffArgs {
         };
 
         let tariff: Option<OcpiTariff> = if let Some(path) = &self.tariff {
-            let file = File::open(&path).map_err(|e| Error::file(path.clone(), e))?;
+            let file = File::open(path).map_err(|e| Error::file(path.clone(), e))?;
             serde_json::from_reader(&file)
                 .map_err(|e| Error::deserialize(path.display(), "tariff", e))?
         } else {
@@ -221,10 +221,7 @@ impl Validate {
             "Total Parking cost",
         );
 
-        println!(
-            "{}",
-            Table::new(table.rows).with(Style::modern()).to_string()
-        );
+        println!("{}", Table::new(table.rows).with(Style::modern()));
 
         Ok(())
     }
@@ -238,7 +235,7 @@ pub struct Analyze {
 
 impl Analyze {
     fn run(self) -> Result<()> {
-        let (report, _, _) = self.args.load_all()?;
+        let (_report, _, _) = self.args.load_all()?;
 
         Ok(())
     }

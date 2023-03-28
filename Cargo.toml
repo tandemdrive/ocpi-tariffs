@@ -2,8 +2,9 @@
 members = ["cli", "ocpi-tariffs"]
 
 [workspace.dependencies]
-ocpi-tariffs = { path = "ocpi-tariffs" }
-cli = { path = "cli", package = "ocpi-tariffs-cli" }
+
+ocpi-tariffs = { path = "ocpi-tariffs", version = "0.1.0" }
+cli = { path = "cli", package = "ocpi-tariffs-cli", version = "0.1.0" }
 
 chrono = { version = "0.4.23", features = ["serde"] }
 chrono-tz = "0.7.0"

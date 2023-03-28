@@ -84,7 +84,7 @@ impl Sub for Number {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0 / rhs.0)
+        Self(self.0 - rhs.0)
     }
 }
 
