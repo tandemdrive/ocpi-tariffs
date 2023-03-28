@@ -3,18 +3,12 @@ use std::{
     path::PathBuf,
 };
 
-use chrono::{DateTime, Duration, TimeZone, Utc};
+use chrono::Duration;
 use chrono_tz::Tz;
 use ocpi_tariffs::{
-    ocpi::{
-        cdr::{Cdr, OcpiCdrDimension, OcpiCdrDimensionType, OcpiChargingPeriod},
-        tariff::OcpiTariff,
-    },
+    ocpi::{cdr::Cdr, tariff::OcpiTariff},
     pricer::Pricer,
 };
-use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
-use std::error::Error;
 
 pub struct JsonTest {
     pub path: PathBuf,
@@ -22,7 +16,7 @@ pub struct JsonTest {
     pub cdrs: Vec<(String, Cdr)>,
 }
 
-pub fn collect_json_tests() -> Result<Vec<JsonTest>, Box<dyn Error>> {
+pub fn collect_json_tests() -> Result<Vec<JsonTest>, Box<dyn std::error::Error>> {
     let mut tests = Vec::new();
 
     for test_dir in read_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/resources"))? {
@@ -77,15 +71,19 @@ macro_rules! tariff {
 }
 
 pub fn validate_cdr(cdr: Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::Error> {
-    let pricer = Pricer::with_tariffs(&cdr, &[tariff], Tz::Europe__Amsterdam);
+    let pricer = Pricer::with_tariffs(&cdr, &[tariff], Tz::UTC);
     let report = pricer.build_report()?;
 
-    assert_eq!(cdr.total_cost, report.total_cost, "total_cost");
+    assert_eq!(cdr.total_cost, report.total_cost.with_scale(), "total_cost");
 
-    assert_eq!(cdr.total_energy, report.total_energy, "total_energy");
+    assert_eq!(
+        cdr.total_energy,
+        report.total_energy.with_scale(),
+        "total_energy"
+    );
     assert_eq!(
         cdr.total_energy_cost.unwrap_or_default(),
-        report.total_energy_cost,
+        report.total_energy_cost.with_scale(),
         "total_energy_cost"
     );
 
@@ -97,7 +95,7 @@ pub fn validate_cdr(cdr: Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::Er
 
     assert_eq!(
         cdr.total_time_cost.unwrap_or_default(),
-        report.total_time_cost,
+        report.total_time_cost.with_scale(),
         "total_time_cost"
     );
 
@@ -109,19 +107,19 @@ pub fn validate_cdr(cdr: Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::Er
 
     assert_eq!(
         cdr.total_parking_cost.unwrap_or_default(),
-        report.total_parking_cost,
+        report.total_parking_cost.with_scale(),
         "total_parking_cost"
     );
 
     assert_eq!(
         cdr.total_reservation_cost.unwrap_or_default(),
-        report.total_reservation_cost,
+        report.total_reservation_cost.with_scale(),
         "total_reservation_cost"
     );
 
     assert_eq!(
         cdr.total_fixed_cost.unwrap_or_default(),
-        report.total_fixed_cost,
+        report.total_fixed_cost.with_scale(),
         "total_fixed_cost"
     );
 

@@ -9,25 +9,43 @@
             "dimensions": [
                 {
                     "type": "TIME",
-                    "volume": 0.16666666666666666666666
+                    "volume": 0.0834
                 }
             ]
         },
         {
-            "start_date_time": "2022-01-13T17:05:00Z",
+            "start_date_time": "2202-01-13T17:00:00Z",
+            "dimensions": [
+                {
+                    "type": "TIME",
+                    "volume": 0.0834
+                }
+            ]
+        },
+        {
+            "start_date_time": "2022-01-13T17:02:00Z",
             "dimensions": [
                 {
                     "type": "PARKING_TIME",
-                    "volume": 0.05
+                    "volume": 0.0334
                 }
             ]
         }
     ],
     "total_cost": {
-        "excl_vat": 0.383,
-        "incl_vat": 0.383
+        "excl_vat": 0.5502,
+        "incl_vat": 0.5502
     },
     "total_energy": 0,
-    "total_time": 0.26666666666666,
+    "total_time": 0.2,
+    "total_time_cost": {
+        "excl_vat": 0.3002,
+        "incl_vat": 0.3002
+    },
+    "total_parking_time": 0.0334,
+    "total_parking_cost": {
+        "excl_vat": 0.25,
+        "incl_vat": 0.25
+    },
     "last_updated": "2022-01-13T00:00:00Z"
 }

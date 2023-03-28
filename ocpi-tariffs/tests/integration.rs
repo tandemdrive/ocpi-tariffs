@@ -1,10 +1,5 @@
-use chrono::{Duration, TimeZone, Utc};
-use ocpi_tariffs::ocpi::cdr::Cdr;
-use rust_decimal_macros::dec;
 
 mod common;
-
-use common::validate_cdr;
 
 #[test]
 fn test_json_files() {

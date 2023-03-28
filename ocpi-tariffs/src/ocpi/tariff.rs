@@ -4,8 +4,13 @@ use chrono::Weekday;
 use serde::Deserialize;
 
 use crate::types::{
-    Ampere, DateTime, Kw, Kwh, Number, Price, SecondsRound, OcpiDate, OcpiTime, Money,
+    electricity::{Ampere, Kw, Kwh},
+    money::{Money, Price, Vat},
+    time::{DateTime, OcpiDate, OcpiTime, SecondsRound},
 };
+
+pub const TIME_STEP_SIZE: u64 = 3600;
+pub const ENERGY_STEP_SIZE: u64 = 1000;
 
 /// The Tariff object describes a tariff and its properties
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -87,7 +92,7 @@ pub struct OcpiPriceComponent {
     /// Price per unit (excluding VAT) for this tariff dimension
     pub price: Money,
 
-    pub vat: Option<Number>,
+    pub vat: Option<Vat>,
 
     /// Minimum amount to be billed. This unit will be billed in this step_size
     /// blocks. For example: if type is time and step_size is 300, then time will
