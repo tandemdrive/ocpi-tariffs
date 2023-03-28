@@ -1,4 +1,7 @@
-use std::ops::{Add, AddAssign, Mul};
+use std::{
+    fmt::Display,
+    ops::{Add, AddAssign, Mul},
+};
 
 use chrono::Duration;
 use rust_decimal::prelude::Zero;
@@ -30,6 +33,12 @@ impl From<HoursDecimal> for Duration {
     }
 }
 
+impl From<Duration> for HoursDecimal {
+    fn from(value: Duration) -> Self {
+        Self(value)
+    }
+}
+
 impl TryFrom<Number> for HoursDecimal {
     type Error = rust_decimal::Error;
 
@@ -37,6 +46,16 @@ impl TryFrom<Number> for HoursDecimal {
         let millis = value * dec!(3_600_000);
         let duration = Duration::milliseconds(millis.try_into()?);
         Ok(Self(duration))
+    }
+}
+
+impl Display for HoursDecimal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let duration = self.0;
+        let seconds = duration.num_seconds() % 60;
+        let minutes = (duration.num_seconds() / 60) % 60;
+        let hours = (duration.num_seconds() / 60) / 60;
+        write!(f, "{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds)
     }
 }
 
@@ -86,6 +105,12 @@ pub struct Kwh(Number);
 impl Kwh {
     pub fn zero() -> Self {
         Self(Number::zero())
+    }
+}
+
+impl Display for Kwh {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:.4}", self.0)
     }
 }
 
@@ -185,7 +210,7 @@ impl From<OcpiTime> for chrono::NaiveTime {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Copy)]
 pub struct Price {
     pub excl_vat: Money,
     pub incl_vat: Money,
@@ -231,6 +256,12 @@ pub struct Money(Number);
 impl Money {
     pub fn zero() -> Self {
         Self(Number::zero())
+    }
+}
+
+impl Display for Money {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:.2}", self.0)
     }
 }
 

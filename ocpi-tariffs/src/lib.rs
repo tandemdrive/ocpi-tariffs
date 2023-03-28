@@ -3,7 +3,7 @@ pub mod pricer;
 mod restriction;
 mod session;
 mod tariff;
-mod types;
+pub mod types;
 
 pub type Result<T> = std::result::Result<T, Error>;
 

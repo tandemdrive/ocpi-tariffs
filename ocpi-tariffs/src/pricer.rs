@@ -1,7 +1,7 @@
-use std::{collections::HashMap, ops::Mul};
+use std::ops::Mul;
 
 use crate::{
-    ocpi::{cdr::Cdr, tariff::OcpiTariff, tariff::TariffDimensionType},
+    ocpi::{cdr::Cdr, tariff::OcpiTariff},
     session::ChargePeriod,
     tariff::{PriceComponent, Tariffs},
     types::{Kwh, Money, Price},
@@ -12,7 +12,6 @@ use chrono_tz::Tz;
 use rust_decimal_macros::dec;
 
 use crate::{session::ChargeSession, Result};
-use rust_decimal::Decimal;
 
 pub struct Pricer {
     session: ChargeSession,

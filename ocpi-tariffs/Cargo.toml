@@ -1,0 +1,14 @@
+[package]
+name = "ocpi-tariffs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono.workspace = true
+chrono-tz.workspace = true
+rust_decimal.workspace = true
+rust_decimal_macros.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
