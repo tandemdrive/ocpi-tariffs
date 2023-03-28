@@ -1,14 +1,23 @@
-use std::{borrow::Cow, fmt::Display, fs::File, io::stdin, path::PathBuf, process::exit};
+use std::{borrow::Cow, fmt::Display, fs::File, io::stdin, ops::Mul, path::PathBuf, process::exit};
 
+use chrono::DateTime;
 use chrono_tz::Tz;
 use clap::{Args, Parser, Subcommand};
 use console::style;
 use ocpi_tariffs::{
     ocpi::{cdr::Cdr, tariff::OcpiTariff},
-    pricer::{Pricer, Report},
-    types::money::Price,
+    pricer::{DimensionReport, Dimensions, Pricer, Report},
+    types::{
+        electricity::Kwh,
+        money::{Money, Price, Vat},
+        time::HoursDecimal,
+    },
 };
-use tabled::{Style, Table, Tabled};
+use tabled::{
+    format::Format,
+    object::{Cell, Rows},
+    Alignment, Concat, Header, Modify, Panel, Rotate, Span, Style, Table, Tabled,
+};
 
 use crate::{error::Error, Result};
 
@@ -120,22 +129,19 @@ pub struct Validate {
     args: TariffArgs,
 }
 
+#[derive(Debug)]
+pub enum Value {}
+
 #[derive(Debug, Tabled)]
 struct ValidateRow {
-    name: String,
-    report: String,
+    #[tabled(rename = "Property")]
+    property: String,
+    #[tabled(rename = "Calculated")]
+    calculated: String,
     #[tabled(rename = "CDR")]
     cdr: String,
-}
-
-impl ValidateRow {
-    fn error(self) -> Self {
-        Self {
-            name: style(self.name).red().to_string(),
-            report: style(self.report).red().to_string(),
-            cdr: style(self.cdr).red().to_string(),
-        }
-    }
+    #[tabled(rename = "Valid")]
+    valid: bool,
 }
 
 struct ValidateTable {
@@ -149,18 +155,16 @@ impl ValidateTable {
         cdr: Option<T>,
         name: &str,
     ) {
-        let error = report == cdr.clone().unwrap_or_default();
+        let valid = report == cdr.clone().unwrap_or_default();
+
         let row = ValidateRow {
-            name: name.to_string(),
-            report: report.to_string(),
+            property: name.to_string(),
+            calculated: report.to_string(),
             cdr: cdr.map_or("<missing>".into(), |s| s.to_string()),
+            valid,
         };
 
-        if error {
-            self.rows.push(row.error())
-        } else {
-            self.rows.push(row)
-        }
+        self.rows.push(row)
     }
 
     pub fn price_row(&mut self, report: Price, cdr: Option<Price>, name: &str) {
@@ -175,6 +179,10 @@ impl ValidateTable {
             &format!("{} incl. VAT", name),
         );
     }
+
+    pub fn valid_rows(&self) -> Vec<bool> {
+        self.rows.iter().map(|r| r.valid).collect()
+    }
 }
 
 impl Validate {
@@ -182,10 +190,11 @@ impl Validate {
         let (report, cdr, _) = self.args.load_all()?;
 
         println!(
-            "{} `{}` with tariff `{}`",
-            style("Validating").green(),
-            self.args.cdr_name(),
-            self.args.tariff_name()
+            "\n{} `{}` with tariff `{}`, using timezone `{}`:",
+            style("Validating").green().bold(),
+            style(self.args.cdr_name()).blue(),
+            style(self.args.tariff_name()).blue(),
+            style(self.args.timezone).blue(),
         );
 
         let mut table = ValidateTable { rows: Vec::new() };
@@ -196,35 +205,71 @@ impl Validate {
             cdr.total_parking_time,
             "Total Parking time",
         );
-        table.row(report.total_energy, Some(cdr.total_energy), "Total Energy");
-
-        table.price_row(report.total_cost, Some(cdr.total_cost), "Total Cost");
+        table.row(
+            report.total_energy.with_scale(),
+            Some(cdr.total_energy),
+            "Total Energy",
+        );
 
         table.price_row(
-            report.total_time_cost,
+            report.total_cost.with_scale(),
+            Some(cdr.total_cost),
+            "Total Cost",
+        );
+
+        table.price_row(
+            report.total_time_cost.with_scale(),
             cdr.total_time_cost,
             "Total Time cost",
         );
         table.price_row(
-            report.total_fixed_cost,
+            report.total_fixed_cost.with_scale(),
             cdr.total_fixed_cost,
             "Total Fixed cost",
         );
         table.price_row(
-            report.total_energy_cost,
+            report.total_energy_cost.with_scale(),
             cdr.total_energy_cost,
             "Total Energy cost",
         );
         table.price_row(
-            report.total_parking_cost,
+            report.total_parking_cost.with_scale(),
             cdr.total_parking_cost,
             "Total Parking cost",
         );
 
+        let valid = table.valid_rows();
+        let all_valid = valid.iter().all(|&s| s);
+
+        let format_valid = Modify::new(Rows::new(..)).with(Format::with_index(|row, (i, _)| {
+            let row = style(row);
+            if i == 0 {
+                row.bold().to_string()
+            } else if valid[i - 1] {
+                row.green().to_string()
+            } else {
+                row.red().to_string()
+            }
+        }));
+
         println!(
             "{}",
-            Table::new(table.rows).with(Style::modern()).to_string()
+            Table::new(table.rows)
+                .with(Style::modern())
+                .with(format_valid)
         );
+
+        if all_valid {
+            println!(
+                "Calculation {} all totals in the CDR.\n",
+                style("matches").green().bold()
+            )
+        } else {
+            println!(
+                "Calculation {} all totals in the CDR.\n",
+                style("does not match").red().bold()
+            )
+        }
 
         Ok(())
     }
@@ -240,6 +285,132 @@ impl Analyze {
     fn run(self) -> Result<()> {
         let (report, _, _) = self.args.load_all()?;
 
+        println!(
+            "\n{} `{}` with tariff `{}`, using timezone `{}`:",
+            style("Analyzing").green().bold(),
+            style(self.args.cdr_name()).blue(),
+            style(self.args.tariff_name()).blue(),
+            style(self.args.timezone).blue(),
+        );
+
+        let mut energy: PeriodTable<Kwh> = PeriodTable::new("Energy");
+        let mut parking: PeriodTable<HoursDecimal> = PeriodTable::new("Parking time");
+        let mut time: PeriodTable<HoursDecimal> = PeriodTable::new("Charging Time");
+        let mut flat: PeriodTable<UnitDisplay> = PeriodTable::new("Flat");
+
+        for period in report.periods.iter() {
+            let start_time = period.start_date_time.with_timezone(&self.args.timezone);
+
+            energy.row(&period.dimensions.energy, start_time);
+            parking.row(&period.dimensions.parking_time, start_time);
+            time.row(&period.dimensions.time, start_time);
+            flat.row(&period.dimensions.flat, start_time);
+        }
+
+        println!("{}", energy.to_table());
+        println!("{}", parking.to_table());
+        println!("{}", time.to_table());
+        println!("{}", flat.to_table());
+
         Ok(())
+    }
+}
+
+pub struct PeriodTable<V: Display> {
+    name: String,
+    rows: Vec<PeriodComponent<V>>,
+}
+
+impl<V: Display> PeriodTable<V> {
+    pub fn new(name: &str) -> Self {
+        Self {
+            rows: Vec::new(),
+            name: name.to_string(),
+        }
+    }
+
+    pub fn row<T>(&mut self, dim: &DimensionReport<T>, time: DateTime<Tz>)
+    where
+        T: Into<V> + Mul<Money, Output = Money> + Copy,
+    {
+        self.rows.push(PeriodComponent {
+            time,
+            price: dim.price.map(|p| p.price).into(),
+            volume: dim.volume.clone().map(Into::into).into(),
+            billed_volume: dim.billed_volume.clone().map(Into::into).into(),
+            vat: dim.price.and_then(|p| p.vat).into(),
+            cost_excl_vat: dim.cost_excl_vat(),
+            cost_incl_vat: dim.cost_incl_vat(),
+        })
+    }
+
+    pub fn to_table(self) -> Table {
+        let mut table = Table::new(self.rows);
+
+        table
+            .with(Style::modern())
+            .with(Panel::header(style(self.name).bold().to_string()))
+            .with(Alignment::center());
+
+        table
+    }
+}
+
+#[derive(Debug, Tabled)]
+pub struct PeriodComponent<V: Display> {
+    #[tabled(rename = "Time", display_with = "format_time")]
+    time: DateTime<Tz>,
+    #[tabled(rename = "Price")]
+    price: OptionDisplay<Money>,
+    #[tabled(rename = "VAT")]
+    vat: OptionDisplay<Vat>,
+    #[tabled(rename = "Volume")]
+    volume: OptionDisplay<V>,
+    #[tabled(rename = "Billed volume")]
+    billed_volume: OptionDisplay<V>,
+    #[tabled(rename = "Cost excl. VAT")]
+    cost_excl_vat: Money,
+    #[tabled(rename = "Cost incl. VAT")]
+    cost_incl_vat: Money,
+}
+
+fn format_time(time: &DateTime<Tz>) -> String {
+    time.format("%y-%m-%d %H:%M:%S").to_string()
+}
+
+#[derive(Debug)]
+pub struct OptionDisplay<T>(Option<T>);
+
+impl<T> From<Option<T>> for OptionDisplay<T> {
+    fn from(value: Option<T>) -> Self {
+        Self(value)
+    }
+}
+
+impl<T> Display for OptionDisplay<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(value) = &self.0 {
+            value.fmt(f)
+        } else {
+            Ok(())
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct UnitDisplay;
+
+impl Display for UnitDisplay {
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Ok(())
+    }
+}
+
+impl From<()> for UnitDisplay {
+    fn from(_: ()) -> Self {
+        UnitDisplay
     }
 }
