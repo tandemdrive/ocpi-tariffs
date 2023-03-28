@@ -169,7 +169,6 @@ impl Restriction {
                 .map_or(true, |current| current < max_current),
             Self::MinPower(min_power) => state.min_power.map_or(true, |power| power >= min_power),
             Self::MaxPower(max_power) => state.max_power.map_or(true, |power| power < max_power),
-            // TODO: implement reservation restrictions (RP).
             _ => true,
         }
     }

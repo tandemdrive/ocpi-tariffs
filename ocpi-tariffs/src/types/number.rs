@@ -60,7 +60,7 @@ impl Add for Number {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
+        Self(self.0.saturating_add(rhs.0))
     }
 }
 
@@ -68,7 +68,7 @@ impl Mul for Number {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Self(self.0 * rhs.0)
+        Self(self.0.saturating_mul(rhs.0))
     }
 }
 
@@ -84,7 +84,7 @@ impl Sub for Number {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0 - rhs.0)
+        Self(self.0.saturating_sub(rhs.0))
     }
 }
 
