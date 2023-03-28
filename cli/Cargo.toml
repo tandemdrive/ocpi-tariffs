@@ -12,6 +12,6 @@ clap.workspace = true
 ocpi-tariffs.workspace = true
 thiserror.workspace = true
 serde_json.workspace = true
-tabled = { version = "0.10.0", features = ["color"] }
+tabled.workspace = true
 chrono-tz.workspace = true
-colored.workspace = true
+console.workspace = true

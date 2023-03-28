@@ -2,7 +2,7 @@ use std::{borrow::Cow, fmt::Display, fs::File, io::stdin, path::PathBuf, process
 
 use chrono_tz::Tz;
 use clap::{Args, Parser, Subcommand};
-use colored::Colorize;
+use console::style;
 use ocpi_tariffs::{
     ocpi::{cdr::Cdr, tariff::OcpiTariff},
     pricer::{Pricer, Report},
@@ -131,9 +131,9 @@ struct ValidateRow {
 impl ValidateRow {
     fn error(self) -> Self {
         Self {
-            name: self.name.red().to_string(),
-            report: self.report.red().to_string(),
-            cdr: self.cdr.red().to_string(),
+            name: style(self.name).red().to_string(),
+            report: style(self.report).red().to_string(),
+            cdr: style(self.cdr).red().to_string(),
         }
     }
 }
@@ -183,7 +183,7 @@ impl Validate {
 
         println!(
             "{} `{}` with tariff `{}`",
-            "Validating".green(),
+            style("Validating").green(),
             self.args.cdr_name(),
             self.args.tariff_name()
         );
