@@ -5,7 +5,6 @@ use crate::session::ChargePeriod;
 use crate::types::money::Vat;
 use crate::types::{money::Money, time::DateTime};
 
-
 #[derive(Debug)]
 pub struct Tariffs(Vec<Tariff>);
 
@@ -134,6 +133,8 @@ impl TariffElement {
         true
     }
 
+    // use this in the future to validate if a period is still valid when it ends.
+    #[allow(dead_code)]
     pub fn is_active_at_end(&self, period: &ChargePeriod) -> bool {
         for restriction in self.restrictions.iter() {
             if !restriction.instant_validity_inclusive(&period.end_instant) {

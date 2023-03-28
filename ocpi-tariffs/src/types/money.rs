@@ -73,7 +73,7 @@ impl Add for Money {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self((self.0 + rhs.0).into())
+        Self(self.0 + rhs.0)
     }
 }
 
@@ -81,7 +81,7 @@ impl Mul<Number> for Money {
     type Output = Money;
 
     fn mul(self, rhs: Number) -> Self::Output {
-        Self((self.0 * rhs).into())
+        Self(self.0 * rhs)
     }
 }
 
@@ -97,7 +97,7 @@ impl Mul<Kwh> for Money {
     type Output = Money;
 
     fn mul(self, rhs: Kwh) -> Self::Output {
-        Self((self.0 * Number::from(rhs)).into())
+        Self(self.0 * Number::from(rhs))
     }
 }
 
@@ -116,7 +116,7 @@ impl Mul<Duration> for Money {
         let duration =
             self.0 * (Number::from(rhs.num_milliseconds()) / Number::from(dec!(3_600_000)));
 
-        Self(duration.into())
+        Self(duration)
     }
 }
 
