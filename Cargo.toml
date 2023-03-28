@@ -2,9 +2,8 @@
 members = ["cli", "ocpi-tariffs"]
 
 [workspace.dependencies]
-
-ocpi-tariffs = { path = "ocpi-tariffs" }
-cli = { path = "cli", package = "ocpi-tariffs-cli" }
+ocpi-tariffs = { path = "ocpi-tariffs", version = "0.1.0" }
+cli = { path = "cli", package = "ocpi-tariffs-cli", version = "0.1.0" }
 
 chrono = { version = "0.4.23", features = ["serde"] }
 chrono-tz = "0.7.0"
@@ -12,7 +11,7 @@ rust_decimal = { version = "1.26.1", features = ["serde-with-arbitrary-precision
 rust_decimal_macros = "1.27.0"
 serde = { version = "1.0", features = ["derive"] }
 clap = { version = "4.1.11", features = ["derive"] }
-colored = "2.0.0"
 thiserror = { version = "1.0.40" }
 serde_json = { version = "1.0" }
-
+console = { version = "0.15.5" }
+tabled = { version = "0.10.0", features = ["color"] }

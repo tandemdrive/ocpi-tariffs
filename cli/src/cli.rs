@@ -2,7 +2,7 @@ use std::{borrow::Cow, fmt::Display, fs::File, io::stdin, path::PathBuf, process
 
 use chrono_tz::Tz;
 use clap::{Args, Parser, Subcommand};
-use colored::Colorize;
+use console::style;
 use ocpi_tariffs::{
     ocpi::{cdr::Cdr, tariff::OcpiTariff},
     pricer::{Pricer, Report},
@@ -71,13 +71,13 @@ pub struct TariffArgs {
 }
 
 impl TariffArgs {
-    fn cdr_name(&self) -> Cow<str> {
+    fn cdr_name(&self) -> Cow<'_, str> {
         self.cdr.as_ref().map_or("<stdin>".into(), |c| {
             c.file_name().unwrap().to_string_lossy()
         })
     }
 
-    fn tariff_name(&self) -> Cow<str> {
+    fn tariff_name(&self) -> Cow<'_, str> {
         self.tariff.as_ref().map_or("<CDR-tariff>".into(), |c| {
             c.file_name().unwrap().to_string_lossy()
         })
@@ -85,7 +85,7 @@ impl TariffArgs {
 
     fn load_all(&self) -> Result<(Report, Cdr, Option<OcpiTariff>)> {
         let cdr: Cdr = if let Some(cdr_path) = &self.cdr {
-            let file = File::open(&cdr_path).map_err(|e| Error::file(cdr_path.clone(), e))?;
+            let file = File::open(cdr_path).map_err(|e| Error::file(cdr_path.clone(), e))?;
             serde_json::from_reader(&file)
                 .map_err(|e| Error::deserialize(cdr_path.display(), "CDR", e))?
         } else {
@@ -95,7 +95,7 @@ impl TariffArgs {
         };
 
         let tariff: Option<OcpiTariff> = if let Some(path) = &self.tariff {
-            let file = File::open(&path).map_err(|e| Error::file(path.clone(), e))?;
+            let file = File::open(path).map_err(|e| Error::file(path.clone(), e))?;
             serde_json::from_reader(&file)
                 .map_err(|e| Error::deserialize(path.display(), "tariff", e))?
         } else {
@@ -131,9 +131,9 @@ struct ValidateRow {
 impl ValidateRow {
     fn error(self) -> Self {
         Self {
-            name: self.name.red().to_string(),
-            report: self.report.red().to_string(),
-            cdr: self.cdr.red().to_string(),
+            name: style(self.name).red().to_string(),
+            report: style(self.report).red().to_string(),
+            cdr: style(self.cdr).red().to_string(),
         }
     }
 }
@@ -183,7 +183,7 @@ impl Validate {
 
         println!(
             "{} `{}` with tariff `{}`",
-            "Validating".green(),
+            style("Validating").green(),
             self.args.cdr_name(),
             self.args.tariff_name()
         );
@@ -221,10 +221,7 @@ impl Validate {
             "Total Parking cost",
         );
 
-        println!(
-            "{}",
-            Table::new(table.rows).with(Style::modern()).to_string()
-        );
+        println!("{}", Table::new(table.rows).with(Style::modern()));
 
         Ok(())
     }
@@ -238,7 +235,7 @@ pub struct Analyze {
 
 impl Analyze {
     fn run(self) -> Result<()> {
-        let (report, _, _) = self.args.load_all()?;
+        let (_report, _, _) = self.args.load_all()?;
 
         Ok(())
     }

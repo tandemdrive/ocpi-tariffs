@@ -82,6 +82,6 @@ pub struct Ampere(Number);
 
 impl From<Number> for Ampere {
     fn from(value: Number) -> Self {
-        Self(value.into())
+        Self(value)
     }
 }

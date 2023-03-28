@@ -40,7 +40,7 @@ impl Pricer {
         let (tariff_index, tariff) = self
             .tariffs
             .active_tariff(self.session.start_date_time)
-            .ok_or_else(|| Error::NoValidTariff)?;
+            .ok_or(Error::NoValidTariff)?;
 
         let mut periods = Vec::new();
         let mut step_size = StepSize::new();
@@ -177,7 +177,7 @@ impl StepSize {
         priced_total
     }
 
-    fn apply_time(&self, periods: &mut Vec<PeriodReport>, total: Duration) -> Duration {
+    fn apply_time(&self, periods: &mut [PeriodReport], total: Duration) -> Duration {
         if let (Some((time_index, price)), None) = (self.time, self.parking_time) {
             let period = &mut periods[time_index];
             let volume = &mut period
@@ -192,7 +192,7 @@ impl StepSize {
         }
     }
 
-    fn apply_parking_time(&self, periods: &mut Vec<PeriodReport>, total: Duration) -> Duration {
+    fn apply_parking_time(&self, periods: &mut [PeriodReport], total: Duration) -> Duration {
         if let Some((parking_index, price)) = self.parking_time {
             let period = &mut periods[parking_index];
             let volume = period
@@ -208,7 +208,7 @@ impl StepSize {
         }
     }
 
-    fn apply_energy(&self, periods: &mut Vec<PeriodReport>, total: Kwh) -> Kwh {
+    fn apply_energy(&self, periods: &mut [PeriodReport], total: Kwh) -> Kwh {
         if let Some((energy_index, price)) = self.energy {
             let period = &mut periods[energy_index];
             let volume = &mut period
@@ -220,8 +220,7 @@ impl StepSize {
             let step_size = Number::from(price.step_size);
 
             let billed = Kwh::from_watt_hours((total.watt_hours() / step_size).ceil() * step_size);
-            let difference = total - billed;
-            *volume = *volume + difference;
+            *volume += total - billed;
 
             billed
         } else {
