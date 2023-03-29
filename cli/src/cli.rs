@@ -6,7 +6,7 @@ use clap::{Args, Parser, Subcommand};
 use console::style;
 use ocpi_tariffs::{
     ocpi::{cdr::Cdr, tariff::OcpiTariff},
-    pricer::{DimensionReport, Dimensions, Pricer, Report},
+    pricer::{DimensionReport, Pricer, Report},
     types::{
         electricity::Kwh,
         money::{Money, Price, Vat},
@@ -15,8 +15,9 @@ use ocpi_tariffs::{
 };
 use tabled::{
     format::Format,
-    object::{Cell, Rows},
-    Alignment, Concat, Header, Modify, Panel, Rotate, Span, Style, Table, Tabled,
+    object::{Rows, Segment},
+    width::MinWidth,
+    Alignment, Modify, Panel, Style, Table, Tabled,
 };
 
 use crate::{error::Error, Result};
@@ -164,7 +165,7 @@ impl ValidateTable {
             valid,
         };
 
-        self.rows.push(row)
+        self.rows.push(row);
     }
 
     pub fn price_row(&mut self, report: Price, cdr: Option<Price>, name: &str) {
@@ -237,7 +238,7 @@ impl Validate {
             cdr.total_parking_cost,
             "Total Parking cost",
         );
-        
+
         let valid = table.valid_rows();
         let all_valid = valid.iter().all(|&s| s);
 
@@ -263,7 +264,7 @@ impl Validate {
             println!(
                 "Calculation {} all totals in the CDR.\n",
                 style("matches").green().bold()
-            )
+            );
         } else {
             println!(
                 "Calculation {} all totals in the CDR.\n",
@@ -285,7 +286,7 @@ pub struct Analyze {
 
 impl Analyze {
     fn run(self) -> Result<()> {
-        let (_report, _, _) = self.args.load_all()?;
+        let (report, _, _) = self.args.load_all()?;
 
         println!(
             "\n{} `{}` with tariff `{}`, using timezone `{}`:",
@@ -309,10 +310,10 @@ impl Analyze {
             flat.row(&period.dimensions.flat, start_time);
         }
 
-        println!("{}", energy.to_table());
-        println!("{}", parking.to_table());
-        println!("{}", time.to_table());
-        println!("{}", flat.to_table());
+        println!("{}", energy.into_table());
+        println!("{}", parking.into_table());
+        println!("{}", time.into_table());
+        println!("{}", flat.into_table());
 
         Ok(())
     }
@@ -338,20 +339,21 @@ impl<V: Display> PeriodTable<V> {
         self.rows.push(PeriodComponent {
             time,
             price: dim.price.map(|p| p.price).into(),
-            volume: dim.volume.clone().map(Into::into).into(),
-            billed_volume: dim.billed_volume.clone().map(Into::into).into(),
+            volume: dim.volume.map(Into::into).into(),
+            billed_volume: dim.billed_volume.map(Into::into).into(),
             vat: dim.price.and_then(|p| p.vat).into(),
             cost_excl_vat: dim.cost_excl_vat(),
             cost_incl_vat: dim.cost_incl_vat(),
-        })
+        });
     }
 
-    pub fn to_table(self) -> Table {
+    pub fn into_table(self) -> Table {
         let mut table = Table::new(self.rows);
 
         table
             .with(Style::modern())
             .with(Panel::header(style(self.name).bold().to_string()))
+            .with(Modify::new(Segment::all()).with(MinWidth::new(10)))
             .with(Alignment::center());
 
         table
