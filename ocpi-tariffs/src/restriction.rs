@@ -14,63 +14,68 @@ pub fn collect_restrictions(restriction: &OcpiTariffRestriction) -> Vec<Restrict
             collected.push(Restriction::WrappingTime {
                 start_time: start_time.into(),
                 end_time: end_time.into(),
-            })
+            });
         }
         (start_time, end_time) => {
             if let Some(start_time) = start_time {
-                collected.push(Restriction::StartTime(start_time.into()))
+                collected.push(Restriction::StartTime(start_time.into()));
             }
 
             if let Some(end_time) = end_time {
-                collected.push(Restriction::EndTime(end_time.into()))
+                collected.push(Restriction::EndTime(end_time.into()));
             }
         }
     }
 
     if let Some(start_date) = restriction.start_date {
-        collected.push(Restriction::StartDate(start_date.into()))
+        collected.push(Restriction::StartDate(start_date.into()));
     }
 
     if let Some(end_date) = restriction.end_date {
-        collected.push(Restriction::EndDate(end_date.into()))
+        collected.push(Restriction::EndDate(end_date.into()));
     }
 
     if let Some(min_kwh) = restriction.min_kwh {
-        collected.push(Restriction::MinKwh(min_kwh))
+        collected.push(Restriction::MinKwh(min_kwh));
     }
 
     if let Some(max_kwh) = restriction.max_kwh {
-        collected.push(Restriction::MaxKwh(max_kwh))
+        collected.push(Restriction::MaxKwh(max_kwh));
     }
 
     if let Some(min_current) = restriction.min_current {
-        collected.push(Restriction::MinCurrent(min_current))
+        collected.push(Restriction::MinCurrent(min_current));
     }
 
     if let Some(max_current) = restriction.max_current {
-        collected.push(Restriction::MaxCurrent(max_current))
+        collected.push(Restriction::MaxCurrent(max_current));
     }
 
     if let Some(min_power) = restriction.min_power {
-        collected.push(Restriction::MinPower(min_power))
+        collected.push(Restriction::MinPower(min_power));
     }
 
     if let Some(max_power) = restriction.max_power {
-        collected.push(Restriction::MaxPower(max_power))
+        collected.push(Restriction::MaxPower(max_power));
     }
 
     if let Some(min_duration) = restriction.min_duration {
-        collected.push(Restriction::MinDuration(min_duration.into()))
+        collected.push(Restriction::MinDuration(min_duration.into()));
     }
 
     if let Some(max_duration) = restriction.max_duration {
-        collected.push(Restriction::MaxDuration(max_duration.into()))
+        collected.push(Restriction::MaxDuration(max_duration.into()));
     }
 
     if !restriction.day_of_week.is_empty() {
-        collected.push(Restriction::DayOfWeek(HashSet::from_iter(
-            restriction.day_of_week.iter().copied().map(Into::into),
-        )))
+        collected.push(Restriction::DayOfWeek(
+            restriction
+                .day_of_week
+                .iter()
+                .copied()
+                .map(Into::into)
+                .collect(),
+        ));
     }
 
     collected
@@ -95,6 +100,7 @@ pub enum Restriction {
     MinDuration(Duration),
     MaxDuration(Duration),
     DayOfWeek(HashSet<Weekday>),
+    #[allow(dead_code)]
     Reservation,
 }
 
@@ -168,7 +174,6 @@ impl Restriction {
                 .map_or(true, |current| current < max_current),
             Self::MinPower(min_power) => state.min_power.map_or(true, |power| power >= min_power),
             Self::MaxPower(max_power) => state.max_power.map_or(true, |power| power < max_power),
-            Self::Reservation => todo!(),
             _ => true,
         }
     }

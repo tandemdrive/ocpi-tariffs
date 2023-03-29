@@ -1,10 +1,11 @@
 [package]
 name = "ocpi-tariffs"
-version = "0.1.0"
-edition = "2021"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/tandemdrive/ocpi-tariffs"
-description = "OCPI tariff calculations"
+version.workspace = true
+edition.workspace = true
+readme.workspace = true
+repository.workspace = true
+description.workspace = true
+license.workspace = true
 
 [dependencies]
 chrono.workspace = true

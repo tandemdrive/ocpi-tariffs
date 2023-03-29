@@ -18,7 +18,7 @@ impl<'de> Deserialize<'de> for HoursDecimal {
     {
         use serde::de::Error;
         let hours = <Number as serde::Deserialize>::deserialize(deserializer)?;
-        let duration = Self::try_from(hours).map_err(|_| D::Error::custom("overflow"))?;
+        let duration = Self::try_from(hours).map_err(|_e| D::Error::custom("overflow"))?;
         Ok(duration)
     }
 }
@@ -81,7 +81,7 @@ impl<'de> Deserialize<'de> for SecondsRound {
         let duration = Duration::seconds(
             seconds
                 .try_into()
-                .map_err(|_| D::Error::custom("overflow"))?,
+                .map_err(|_e| D::Error::custom("overflow"))?,
         );
 
         Ok(Self(duration))
@@ -105,8 +105,7 @@ impl<'de> Deserialize<'de> for OcpiDate {
         use serde::de::Error;
 
         let s = <String as Deserialize>::deserialize(deserializer)?;
-        let date =
-            chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").map_err(|e| D::Error::custom(e))?;
+        let date = chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").map_err(D::Error::custom)?;
 
         Ok(Self(date))
     }
@@ -129,8 +128,7 @@ impl<'de> Deserialize<'de> for OcpiTime {
         use serde::de::Error;
 
         let s = <String as Deserialize>::deserialize(deserializer)?;
-        let date =
-            chrono::NaiveTime::parse_from_str(&s, "%H:%M").map_err(|e| D::Error::custom(e))?;
+        let date = chrono::NaiveTime::parse_from_str(&s, "%H:%M").map_err(D::Error::custom)?;
 
         Ok(Self(date))
     }

@@ -195,10 +195,10 @@ impl PeriodData {
                     inst.duration = Some(volume.into());
                 }
                 OcpiCdrDimension::ParkingTime(volume) => {
-                    inst.parking_duration = Some(volume.into())
+                    inst.parking_duration = Some(volume.into());
                 }
                 OcpiCdrDimension::ReservationTime(volume) => {
-                    inst.reservation_duration = Some(volume.into())
+                    inst.reservation_duration = Some(volume.into());
                 }
             }
         }
