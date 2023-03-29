@@ -52,7 +52,7 @@ impl Add for Kwh {
 
 impl AddAssign for Kwh {
     fn add_assign(&mut self, rhs: Self) {
-        self.0 = self.0 + rhs.0
+        self.0 = self.0 + rhs.0;
     }
 }
 

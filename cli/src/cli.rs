@@ -157,9 +157,9 @@ impl ValidateTable {
         };
 
         if error {
-            self.rows.push(row.error())
+            self.rows.push(row.error());
         } else {
-            self.rows.push(row)
+            self.rows.push(row);
         }
     }
 
