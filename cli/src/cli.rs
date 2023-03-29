@@ -268,7 +268,9 @@ impl Validate {
             println!(
                 "Calculation {} all totals in the CDR.\n",
                 style("does not match").red().bold()
-            )
+            );
+
+            exit(1);
         }
 
         Ok(())
