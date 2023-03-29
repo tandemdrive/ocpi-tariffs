@@ -19,7 +19,7 @@ fn test_json_files() {
             if result.is_err() {
                 should_panic = true;
             } else {
-                eprintln!("success")
+                eprintln!("success");
             }
         }
     }
