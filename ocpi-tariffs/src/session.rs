@@ -41,13 +41,6 @@ impl ChargeSession {
     }
 }
 
-#[derive(Debug)]
-pub enum ChargeState {
-    Charging,
-    Reserved,
-    Parked,
-}
-
 /// Describes the properties of a single charging period.
 #[derive(Debug)]
 pub struct ChargePeriod {
@@ -100,24 +93,6 @@ pub struct PeriodData {
     pub parking_duration: Option<Duration>,
     pub reservation_duration: Option<Duration>,
     pub energy: Option<Kwh>,
-}
-
-impl PeriodData {
-    pub fn charge_state(&self) -> ChargeState {
-        if self.max_current.is_some()
-            || self.min_current.is_some()
-            || self.max_power.is_some()
-            || self.min_power.is_some()
-            || self.duration.is_some()
-            || self.energy.is_some()
-        {
-            ChargeState::Charging
-        } else if self.reservation_duration.is_some() {
-            ChargeState::Reserved
-        } else {
-            ChargeState::Parked
-        }
-    }
 }
 
 /// This describes the properties in the charge session that are instantaneous. For example

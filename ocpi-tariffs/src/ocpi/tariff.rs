@@ -9,46 +9,32 @@ use crate::types::{
     time::{DateTime, OcpiDate, OcpiTime, SecondsRound},
 };
 
-pub const TIME_STEP_SIZE: u64 = 3600;
-pub const ENERGY_STEP_SIZE: u64 = 1000;
-
 /// The Tariff object describes a tariff and its properties
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct OcpiTariff {
+    /// Code designating in which country this country is active.
     pub country_code: String,
-
-    pub party_id: String,
-
-    /// Uniquely identifies the tariff within the CPOs platform (and suboperator platforms).
-    pub id: String,
 
     /// Currency of this tariff, ISO 4217 Code
     pub currency: String,
 
-    pub tariff_type: Option<TariffType>,
-
+    /// The minimum amount that this tariff will cost.
     pub min_price: Option<Price>,
 
+    /// The maximum amount that this tariff will cost.
     pub max_price: Option<Price>,
 
     /// List of tariff elements
     pub elements: Vec<OcpiTariffElement>,
 
+    /// Start time when this tariff becomes active.
     pub start_date_time: Option<DateTime>,
 
+    /// End time when this tariff becomes active.
     pub end_date_time: Option<DateTime>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub enum TariffType {
-    AdHocPayment,
-    ProfileCheap,
-    ProfileFast,
-    ProfileGreen,
-    Regular,
-}
-
-/// Weekday enum
+/// Days of the week.
 #[derive(Debug, Copy, PartialEq, Eq, Clone, Hash, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DayOfWeek {
@@ -82,7 +68,7 @@ impl From<DayOfWeek> for Weekday {
     }
 }
 
-/// Component of a tariff price
+/// Component of a tariff price.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct OcpiPriceComponent {
     /// Type of tariff dimension
@@ -92,6 +78,7 @@ pub struct OcpiPriceComponent {
     /// Price per unit (excluding VAT) for this tariff dimension
     pub price: Money,
 
+    /// Optionally specify a VAT percentage for this component.
     pub vat: Option<Vat>,
 
     /// Minimum amount to be billed. This unit will be billed in this step_size
@@ -148,8 +135,10 @@ pub struct OcpiTariffRestriction {
     /// Maximum used energy in kWh, for example 50, valid until this amount of energy is used
     pub max_kwh: Option<Kwh>,
 
+    /// The minimum current in A.
     pub min_current: Option<Ampere>,
 
+    /// The maximum current in A.
     pub max_current: Option<Ampere>,
 
     /// Minimum power in kW, for example 0, valid from this charging speed
@@ -168,12 +157,16 @@ pub struct OcpiTariffRestriction {
     #[serde(default)]
     pub day_of_week: Vec<DayOfWeek>,
 
+    /// Wether this tariff applies for reservation.
     pub reservation: Option<ReservationRestrictionType>,
 }
 
+/// The type of reservation a tariff applies to.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ReservationRestrictionType {
+    /// The tariff applies when the charge session is reserved.
     Reservation,
+    /// The tariff applies when the reservation expires.
     ReservationExpires,
 }

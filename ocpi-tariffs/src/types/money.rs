@@ -9,20 +9,24 @@ use serde::Deserialize;
 
 use super::{electricity::Kwh, number::Number};
 
+/// A price consisting of a value including VAT, and a value excluding VAT.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct Price {
+    /// The price excluding VAT.
     pub excl_vat: Money,
+    /// The price including VAT.
     pub incl_vat: Money,
 }
 
 impl Price {
-    pub fn zero() -> Self {
+    pub(crate) fn zero() -> Self {
         Self {
             excl_vat: Money::zero(),
             incl_vat: Money::zero(),
         }
     }
 
+    /// Round this number to the OCPI specified amount of decimals.
     pub fn with_scale(self) -> Self {
         Self {
             excl_vat: self.excl_vat.with_scale(),
@@ -55,15 +59,17 @@ impl Default for Price {
     }
 }
 
+/// A monetary amount, the currency is dependant on the specified tariff.
 #[derive(Debug, Default, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(transparent)]
 pub struct Money(Number);
 
 impl Money {
-    pub fn zero() -> Self {
+    pub(crate) fn zero() -> Self {
         Self(Number::default())
     }
 
+    /// Round this number to the OCPI specified amount of decimals.
     pub fn with_scale(self) -> Self {
         Self(self.0.with_scale())
     }
@@ -156,6 +162,7 @@ impl Display for Money {
     }
 }
 
+/// A VAT percentage.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Deserialize)]
 #[serde(transparent)]
 pub struct Vat(Number);

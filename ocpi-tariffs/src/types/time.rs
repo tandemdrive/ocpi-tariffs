@@ -6,8 +6,10 @@ use serde::Deserialize;
 
 use super::number::Number;
 
+/// A `chrono` UTC date time.
 pub type DateTime = chrono::DateTime<chrono::Utc>;
 
+/// A generic duration type that converts from and to a decimal amount of hours.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct HoursDecimal(Duration);
 
@@ -46,7 +48,7 @@ impl TryFrom<Number> for HoursDecimal {
 }
 
 impl HoursDecimal {
-    pub fn zero() -> Self {
+    pub(crate) fn zero() -> Self {
         Self(Duration::zero())
     }
 }
@@ -67,6 +69,7 @@ impl Display for HoursDecimal {
     }
 }
 
+/// A generic duration type that converts from and to a integer amount of seconds.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct SecondsRound(Duration);
 
@@ -94,6 +97,7 @@ impl From<SecondsRound> for Duration {
     }
 }
 
+/// A OCPI specific local date, without a time.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct OcpiDate(chrono::NaiveDate);
 
@@ -117,6 +121,7 @@ impl From<OcpiDate> for chrono::NaiveDate {
     }
 }
 
+/// A OCPI specific local time, without a date.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct OcpiTime(chrono::NaiveTime);
 
