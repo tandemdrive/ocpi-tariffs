@@ -52,7 +52,7 @@ impl Add for Kwh {
 
 impl AddAssign for Kwh {
     fn add_assign(&mut self, rhs: Self) {
-        self.0 = self.0 + rhs.0
+        self.0 = self.0 + rhs.0;
     }
 }
 
@@ -82,6 +82,6 @@ pub struct Ampere(Number);
 
 impl From<Number> for Ampere {
     fn from(value: Number) -> Self {
-        Self(value.into())
+        Self(value)
     }
 }
