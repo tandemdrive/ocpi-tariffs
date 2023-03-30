@@ -384,7 +384,7 @@ where
     }
 
     /// The cost excluding VAT of this dimension during a period.
-    fn cost_excl_vat(&self) -> Money {
+    pub fn cost_excl_vat(&self) -> Money {
         if let Some(volume) = self.billed_volume {
             let price = self.price.map_or_else(Money::zero, |c| c.price);
             volume * price
@@ -394,7 +394,7 @@ where
     }
 
     /// The cost including VAT of this dimension during a period.
-    fn cost_incl_vat(&self) -> Money {
+    pub fn cost_incl_vat(&self) -> Money {
         if let Some(vat) = self.price.and_then(|c| c.vat) {
             self.cost_excl_vat() * vat
         } else {

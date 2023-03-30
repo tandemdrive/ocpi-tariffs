@@ -158,7 +158,7 @@ impl From<Money> for Number {
 
 impl Display for Money {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:.2}", self.0)
+        write!(f, "{:.4}", self.0)
     }
 }
 
@@ -180,5 +180,11 @@ impl Mul<Vat> for Money {
     type Output = Money;
     fn mul(self, rhs: Vat) -> Self::Output {
         rhs * self
+    }
+}
+
+impl Display for Vat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }

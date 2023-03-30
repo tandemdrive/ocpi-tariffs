@@ -14,7 +14,7 @@
             ]
         },
         {
-            "start_date_time": "2202-01-13T17:00:00Z",
+            "start_date_time": "2022-01-13T17:00:00Z",
             "dimensions": [
                 {
                     "type": "TIME",

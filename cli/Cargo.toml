@@ -18,4 +18,5 @@ thiserror.workspace = true
 serde_json.workspace = true
 tabled.workspace = true
 chrono-tz.workspace = true
+chrono.workspace = true
 console.workspace = true
