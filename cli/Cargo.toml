@@ -1,10 +1,10 @@
 [package]
 name = "ocpi-tariffs-cli"
+readme = "README.md"
+description = "CLI application for OCPI tariff calculation"
 version.workspace = true
 edition.workspace = true
-readme.workspace = true
 repository.workspace = true
-description.workspace = true
 license.workspace = true
 
 [[bin]]

@@ -1,5 +1,5 @@
 #![deny(missing_docs)]
-#![doc = include_str!("../README.md")]
+#![doc = include_str!("../../README.md")]
 
 /// OCPI specific structures for defining tariffs and charge sessions.
 pub mod ocpi;
