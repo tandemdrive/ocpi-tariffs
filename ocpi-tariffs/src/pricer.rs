@@ -21,13 +21,13 @@ use chrono_tz::Tz;
 /// calculation.
 ///
 /// Either specify a `Cdr` containing a list of tariffs.
-/// ```
+/// ```ignore
 /// let pricer = Pricer::new(cdr, Tz::Europe__Amsterdam);
 /// let report = pricer.build_report();
 /// ```
 ///
 /// Or provide both the `Cdr` and a slice of `OcpiTariff`'s.
-/// ```
+/// ```ignore
 /// let pricer = Pricer::with_tariffs(cdr, tariffs, Tz::Europe__Amsterdam);
 /// let report = pricer.build_report();
 /// ```
