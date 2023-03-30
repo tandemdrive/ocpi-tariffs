@@ -130,9 +130,6 @@ pub struct Validate {
     args: TariffArgs,
 }
 
-#[derive(Debug)]
-pub enum Value {}
-
 #[derive(Debug, Tabled)]
 struct ValidateRow {
     #[tabled(rename = "Property")]
