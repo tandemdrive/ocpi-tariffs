@@ -8,12 +8,13 @@ use serde::Deserialize;
 
 use super::number::Number;
 
+/// A value of kilo watt hours.
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Default)]
 #[serde(transparent)]
 pub struct Kwh(Number);
 
 impl Kwh {
-    pub fn zero() -> Self {
+    pub(crate) fn zero() -> Self {
         Self(Number::default())
     }
 
@@ -25,6 +26,7 @@ impl Kwh {
         Self(num / dec!(1000.0).into())
     }
 
+    /// Round this number to the OCPI specified amount of decimals.
     pub fn with_scale(self) -> Self {
         Self(self.0.with_scale())
     }
@@ -72,10 +74,12 @@ impl Mul<Number> for Kwh {
     }
 }
 
+/// A value of kilo watts.
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 #[serde(transparent)]
 pub struct Kw(Number);
 
+/// A value of amperes.
 #[derive(Debug, Deserialize, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 #[serde(transparent)]
 pub struct Ampere(Number);

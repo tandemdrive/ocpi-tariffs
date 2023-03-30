@@ -16,12 +16,29 @@ use crate::{
 use chrono::{DateTime, Duration, Utc};
 use chrono_tz::Tz;
 
+/// Pricer that encapsulates a single charge-session and a list of tariffs.
+/// To run the pricer call `build_report`. The resulting report contains the totals, subtotals and a breakdown of the
+/// calculation.
+///
+/// Either specify a `Cdr` containing a list of tariffs.
+/// ```ignore
+/// let pricer = Pricer::new(cdr, Tz::Europe__Amsterdam);
+/// let report = pricer.build_report();
+/// ```
+///
+/// Or provide both the `Cdr` and a slice of `OcpiTariff`'s.
+/// ```ignore
+/// let pricer = Pricer::with_tariffs(cdr, tariffs, Tz::Europe__Amsterdam);
+/// let report = pricer.build_report();
+/// ```
 pub struct Pricer {
     session: ChargeSession,
     tariffs: Tariffs,
 }
 
 impl Pricer {
+    /// Instantiate the pricer with a `Cdr` that contains at least on tariff.
+    /// Provide the `local_timezone` of the area where this charge session was priced.
     pub fn new(cdr: &Cdr, local_timezone: Tz) -> Self {
         Self {
             session: ChargeSession::new(cdr, local_timezone),
@@ -29,6 +46,8 @@ impl Pricer {
         }
     }
 
+    /// Instantiate the pricer with a `Cdr` and a slice that contains at least on tariff.
+    /// Provide the `local_timezone` of the area where this charge session was priced.
     pub fn with_tariffs(cdr: &Cdr, tariffs: &[OcpiTariff], local_timezone: Tz) -> Self {
         Self {
             session: ChargeSession::new(cdr, local_timezone),
@@ -36,6 +55,8 @@ impl Pricer {
         }
     }
 
+    /// Attempt to apply the first found valid tariff the charge session and build a report
+    /// containing the results.
     pub fn build_report(&self) -> Result<Report> {
         let (tariff_index, tariff) = self
             .tariffs
@@ -115,8 +136,6 @@ impl Pricer {
             billed_charging_time,
             total_reservation_cost: Price::zero(),
         };
-
-        // eprintln!("{:#?}", report);
 
         Ok(report)
     }
@@ -245,16 +264,19 @@ pub struct Report {
     pub total_time: Duration,
     /// Total duration of the charging session (excluding not charging), in hours.
     pub total_charging_time: Duration,
+    /// The total charging time after applying step-size.
     pub billed_charging_time: Duration,
     /// Total sum of all the cost related to parking of this transaction, including fixed price components, in the specified currency.
     pub total_parking_cost: Price,
     /// Total duration of the charging session where the EV was not charging (no energy was transferred between EVSE and EV), in hours.
     pub total_parking_time: Duration,
+    /// The total parking time after applying step-size
     pub billed_parking_time: Duration,
     /// Total sum of all the cost of all the energy used, in the specified currency.
     pub total_energy_cost: Price,
     /// Total energy charged, in kWh.
     pub total_energy: Kwh,
+    /// The total energy after applying step-size.
     pub billed_energy: Kwh,
     /// Total sum of all the fixed costs in the specified currency, except fixed price components of parking and reservation. The cost not depending on amount of time/energy used etc. Can contain costs like a start tariff.
     pub total_fixed_cost: Price,
@@ -262,10 +284,14 @@ pub struct Report {
     pub total_reservation_cost: Price,
 }
 
+/// A report for a single period that occurred during a session.
 #[derive(Debug)]
 pub struct PeriodReport {
+    /// The start time of this period.
     pub start_date_time: DateTime<Utc>,
+    /// The end time of this period.
     pub end_date_time: DateTime<Utc>,
+    /// A structure that contains results per dimension.
     pub dimensions: Dimensions,
 }
 
@@ -287,16 +313,21 @@ impl PeriodReport {
     }
 }
 
+/// A structure containing a report for each dimension.
 #[derive(Debug)]
 pub struct Dimensions {
+    /// The flat dimension.
     pub flat: DimensionReport<()>,
+    /// The energy dimension.
     pub energy: DimensionReport<Kwh>,
+    /// The time dimension.
     pub time: DimensionReport<Duration>,
+    /// The parking time dimension.
     pub parking_time: DimensionReport<Duration>,
 }
 
 impl Dimensions {
-    pub fn new(components: PriceComponents, data: &PeriodData) -> Self {
+    pub(crate) fn new(components: PriceComponents, data: &PeriodData) -> Self {
         Self {
             parking_time: DimensionReport::new(components.parking, data.parking_duration),
             time: DimensionReport::new(components.time, data.duration),
@@ -306,10 +337,24 @@ impl Dimensions {
     }
 }
 
+/// A report for a single dimension during a single period.
 #[derive(Debug)]
 pub struct DimensionReport<V> {
+    /// The price component that was active during this period for this dimension.
+    /// It could be that no price component was active during this period for this dimension in
+    /// which case `price` is `None`.
     pub price: Option<PriceComponent>,
+    /// The volume of this dimension during this period, as received in the provided charge detail record.
+    /// It could be that no volume was provided during this period for this dimension in which case
+    /// the `volume` is `None`.
     pub volume: Option<V>,
+    /// This field contains the optional value of `volume` after a potential step size was applied.
+    /// Step size is applied over the total volume during the whole session of a dimension. But the
+    /// resulting additional volume should be billed according to the price component in this
+    /// period.
+    ///
+    /// If no step-size was applied for this period, the volume is exactly equal to the `volume`
+    /// field.
     pub billed_volume: Option<V>,
 }
 
@@ -337,6 +382,7 @@ where
             excl_vat: self.cost_excl_vat(),
         }
     }
+
     /// The cost excluding VAT of this dimension during a period.
     pub fn cost_excl_vat(&self) -> Money {
         if let Some(volume) = self.billed_volume {
