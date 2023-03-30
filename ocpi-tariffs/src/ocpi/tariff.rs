@@ -157,7 +157,7 @@ pub struct OcpiTariffRestriction {
     #[serde(default)]
     pub day_of_week: Vec<DayOfWeek>,
 
-    /// Wether this tariff applies for reservation.
+    /// Whether this tariff applies for reservation.
     pub reservation: Option<ReservationRestrictionType>,
 }
 
