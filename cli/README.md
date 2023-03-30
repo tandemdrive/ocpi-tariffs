@@ -50,7 +50,7 @@ Options:
 
 #### Validate
 
-To price a tariff and CDR and see check if the calculation differs from the original CDR use `validate`:
+To price a tariff and CDR and check if the calculation differs from the original CDR use `validate`:
 
 ```
 Validate a given charge detail record (CDR) against either a provided tariff structure or a tariff that is contained in the CDR itself.
