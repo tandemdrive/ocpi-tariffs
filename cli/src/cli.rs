@@ -22,7 +22,7 @@ use tabled::{
 
 use crate::{error::Error, Result};
 
-#[derive(Debug, Parser)]
+#[derive(Parser)]
 pub struct Cli {
     #[clap(subcommand)]
     command: Command,
@@ -37,7 +37,7 @@ impl Cli {
     }
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Subcommand)]
 pub enum Command {
     /// Validate a given charge detail record (CDR) against either a provided tariff structure or
     /// a tariff that is contained in the CDR itself.
@@ -61,7 +61,7 @@ impl Command {
     }
 }
 
-#[derive(Debug, Args)]
+#[derive(Args)]
 pub struct TariffArgs {
     /// A path to the charge detail record in json format.
     ///
@@ -124,13 +124,13 @@ impl TariffArgs {
     }
 }
 
-#[derive(Debug, Parser)]
+#[derive(Parser)]
 pub struct Validate {
     #[command(flatten)]
     args: TariffArgs,
 }
 
-#[derive(Debug, Tabled)]
+#[derive(Tabled)]
 struct ValidateRow {
     #[tabled(rename = "Property")]
     property: String,
@@ -275,7 +275,7 @@ impl Validate {
     }
 }
 
-#[derive(Debug, Parser)]
+#[derive(Parser)]
 pub struct Analyze {
     #[command(flatten)]
     args: TariffArgs,
@@ -335,10 +335,10 @@ impl<V: Display> PeriodTable<V> {
     {
         self.rows.push(PeriodComponent {
             time,
-            price: dim.price.map(|p| p.price).into(),
+            price: dim.price.as_ref().map(|p| p.price).into(),
             volume: dim.volume.map(Into::into).into(),
             billed_volume: dim.billed_volume.map(Into::into).into(),
-            vat: dim.price.and_then(|p| p.vat).into(),
+            vat: dim.price.as_ref().and_then(|p| p.vat).into(),
             cost_excl_vat: dim.cost_excl_vat(),
             cost_incl_vat: dim.cost_incl_vat(),
         });
@@ -357,7 +357,7 @@ impl<V: Display> PeriodTable<V> {
     }
 }
 
-#[derive(Debug, Tabled)]
+#[derive(Tabled)]
 pub struct PeriodComponent<V: Display> {
     #[tabled(rename = "Time", display_with = "format_time")]
     time: DateTime<Tz>,
@@ -379,7 +379,6 @@ fn format_time(time: &DateTime<Tz>) -> String {
     time.format("%y-%m-%d %H:%M:%S").to_string()
 }
 
-#[derive(Debug)]
 pub struct OptionDisplay<T>(Option<T>);
 
 impl<T> From<Option<T>> for OptionDisplay<T> {
@@ -401,7 +400,7 @@ where
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct UnitDisplay;
 
 impl Display for UnitDisplay {

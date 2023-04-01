@@ -141,7 +141,6 @@ impl Pricer {
     }
 }
 
-#[derive(Debug)]
 struct StepSize {
     time: Option<(usize, PriceComponent)>,
     parking_time: Option<(usize, PriceComponent)>,
@@ -159,20 +158,20 @@ impl StepSize {
 
     fn update(&mut self, index: usize, components: &PriceComponents, period: &ChargePeriod) {
         if period.period_data.energy.is_some() {
-            if let Some(energy) = components.energy {
-                self.energy = Some((index, energy));
+            if let Some(energy) = &components.energy {
+                self.energy = Some((index, energy.clone()));
             }
         }
 
         if period.period_data.duration.is_some() {
-            if let Some(time) = components.time {
-                self.time = Some((index, time));
+            if let Some(time) = &components.time {
+                self.time = Some((index, time.clone()));
             }
         }
 
         if period.period_data.parking_duration.is_some() {
-            if let Some(parking) = components.parking {
-                self.parking_time = Some((index, parking));
+            if let Some(parking) = &components.parking {
+                self.parking_time = Some((index, parking.clone()));
             }
         }
     }
@@ -197,8 +196,8 @@ impl StepSize {
     }
 
     fn apply_time(&self, periods: &mut [PeriodReport], total: Duration) -> Duration {
-        if let (Some((time_index, price)), None) = (self.time, self.parking_time) {
-            let period = &mut periods[time_index];
+        if let (Some((time_index, price)), None) = (&self.time, &self.parking_time) {
+            let period = &mut periods[*time_index];
             let volume = &mut period
                 .dimensions
                 .time
@@ -212,8 +211,8 @@ impl StepSize {
     }
 
     fn apply_parking_time(&self, periods: &mut [PeriodReport], total: Duration) -> Duration {
-        if let Some((parking_index, price)) = self.parking_time {
-            let period = &mut periods[parking_index];
+        if let Some((parking_index, price)) = &self.parking_time {
+            let period = &mut periods[*parking_index];
             let volume = period
                 .dimensions
                 .parking_time
@@ -228,8 +227,8 @@ impl StepSize {
     }
 
     fn apply_energy(&self, periods: &mut [PeriodReport], total: Kwh) -> Kwh {
-        if let Some((energy_index, price)) = self.energy {
-            let period = &mut periods[energy_index];
+        if let Some((energy_index, price)) = &self.energy {
+            let period = &mut periods[*energy_index];
             let volume = &mut period
                 .dimensions
                 .energy
@@ -250,7 +249,6 @@ impl StepSize {
 
 /// Structure containing the charge session priced according to the specified tariff.
 /// The fields prefixed `total` correspond to CDR fields with the same name.
-#[derive(Debug)]
 pub struct Report {
     /// Charge session details per period.
     pub periods: Vec<PeriodReport>,
@@ -285,7 +283,6 @@ pub struct Report {
 }
 
 /// A report for a single period that occurred during a session.
-#[derive(Debug)]
 pub struct PeriodReport {
     /// The start time of this period.
     pub start_date_time: DateTime<Utc>,
@@ -314,7 +311,6 @@ impl PeriodReport {
 }
 
 /// A structure containing a report for each dimension.
-#[derive(Debug)]
 pub struct Dimensions {
     /// The flat dimension.
     pub flat: DimensionReport<()>,
@@ -338,7 +334,6 @@ impl Dimensions {
 }
 
 /// A report for a single dimension during a single period.
-#[derive(Debug)]
 pub struct DimensionReport<V> {
     /// The price component that was active during this period for this dimension.
     /// It could be that no price component was active during this period for this dimension in
@@ -386,7 +381,7 @@ where
     /// The cost excluding VAT of this dimension during a period.
     pub fn cost_excl_vat(&self) -> Money {
         if let Some(volume) = self.billed_volume {
-            let price = self.price.map_or_else(Money::zero, |c| c.price);
+            let price = self.price.as_ref().map_or_else(Money::zero, |c| c.price);
             volume * price
         } else {
             Money::zero()
@@ -395,7 +390,7 @@ where
 
     /// The cost including VAT of this dimension during a period.
     pub fn cost_incl_vat(&self) -> Money {
-        if let Some(vat) = self.price.and_then(|c| c.vat) {
+        if let Some(vat) = self.price.as_ref().and_then(|c| c.vat) {
             self.cost_excl_vat() * vat
         } else {
             self.cost_excl_vat()
