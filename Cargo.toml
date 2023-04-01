@@ -10,16 +10,8 @@ license = "MIT OR Apache-2.0"
 members = ["cli", "ocpi-tariffs"]
 
 [workspace.dependencies]
-ocpi-tariffs = { path = "ocpi-tariffs", version = "0.2.0" }
-cli = { path = "cli", package = "ocpi-tariffs-cli", version = "0.2.0" }
-
-chrono = { version = "0.4.23", features = ["serde"] }
 chrono-tz = "0.7.0"
-rust_decimal = { version = "1.26.1", features = ["serde-with-arbitrary-precision"] }
-rust_decimal_macros = "1.27.0"
-serde = { version = "1.0", features = ["derive"] }
-clap = { version = "4.1.11", features = ["derive"] }
-thiserror = { version = "1.0.40" }
+chrono = { version = "0.4.23", features = ["serde"] }
+cli = { path = "cli", package = "ocpi-tariffs-cli", version = "0.2.0" }
+ocpi-tariffs = { path = "ocpi-tariffs", version = "0.2.0" }
 serde_json = { version = "1.0" }
-console = { version = "0.15.5" }
-tabled = { version = "0.10.0", features = ["color"] }

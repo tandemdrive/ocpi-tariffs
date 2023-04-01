@@ -1,19 +1,34 @@
-use std::fmt::Display;
-use std::io;
-use std::path::PathBuf;
+use std::{fmt, io, path::PathBuf};
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 pub enum Error {
-    #[error("File error `{path}`: {error}")]
-    File { path: PathBuf, error: io::Error },
-    #[error("Could not deserialize {kind} from `{path}`: {error}")]
+    File {
+        path: PathBuf,
+        error: io::Error,
+    },
     Deserialize {
         path: String,
         kind: &'static str,
         error: serde_json::Error,
     },
-    #[error("{0:?}")]
     Internal(ocpi_tariffs::Error),
+}
+impl std::error::Error for Error {}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Self::File { path, error } => {
+                format!("File error `{}`: {}", path.display(), error)
+            }
+            Self::Deserialize { path, kind, error } => {
+                format!("Could not deserialize {kind} from `{path}`: {error}")
+            }
+            Self::Internal(e) => format!("{e}"),
+        };
+
+        f.write_str(&s)
+    }
 }
 
 impl Error {
@@ -21,7 +36,11 @@ impl Error {
         Self::File { path, error }
     }
 
-    pub fn deserialize(path: impl Display, kind: &'static str, error: serde_json::Error) -> Self {
+    pub fn deserialize(
+        path: impl fmt::Display,
+        kind: &'static str,
+        error: serde_json::Error,
+    ) -> Self {
         Self::Deserialize {
             path: path.to_string(),
             kind,
