@@ -10,7 +10,7 @@ use serde::Deserialize;
 use super::{electricity::Kwh, number::Number};
 
 /// A price consisting of a value including VAT, and a value excluding VAT.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
 pub struct Price {
     /// The price excluding VAT.
     pub excl_vat: Money,

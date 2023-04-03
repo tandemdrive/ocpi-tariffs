@@ -42,7 +42,6 @@ impl ChargeSession {
 }
 
 /// Describes the properties of a single charging period.
-#[derive(Debug)]
 pub struct ChargePeriod {
     /// Holds properties that are valid for the entirety of this period.
     pub period_data: PeriodData,
@@ -70,7 +69,7 @@ impl ChargePeriod {
     /// Construct a period with the properties of `period` that ends on `end_date_time` which succeeds `self`.
     fn next(&self, period: &OcpiChargingPeriod, end_date_time: DateTime) -> Self {
         let charge_state = PeriodData::new(period);
-        let start_instant = self.end_instant;
+        let start_instant = self.end_instant.clone();
         let end_instant = start_instant.next(&charge_state, end_date_time);
 
         Self {
@@ -83,7 +82,6 @@ impl ChargePeriod {
 
 /// This describes the properties in the charge session that a valid during a certain period. For
 /// example the `duration` field is the charge duration during a certain charging period.
-#[derive(Debug)]
 pub struct PeriodData {
     pub max_current: Option<Ampere>,
     pub min_current: Option<Ampere>,
@@ -97,7 +95,7 @@ pub struct PeriodData {
 
 /// This describes the properties in the charge session that are instantaneous. For example
 /// the `total_energy` is the total amount of energy in the charge session at a certain instant.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone)]
 pub struct InstantData {
     local_timezone: Tz,
     pub date_time: DateTime,
@@ -116,7 +114,7 @@ impl InstantData {
     }
 
     fn next(&self, state: &PeriodData, date_time: DateTime) -> Self {
-        let mut next = *self;
+        let mut next = self.clone();
 
         next.date_time = date_time;
 

@@ -9,7 +9,7 @@ use crate::types::{
 };
 
 /// The CDR object describes the Charging Session and its costs. How these costs are build up etc.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct Cdr {
     /// Start timestamp of the charging session.
     pub start_date_time: DateTime,
@@ -81,7 +81,7 @@ pub enum OcpiCdrDimension {
 }
 
 /// A single charging period, containing a non empty list of charge dimensions.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct OcpiChargingPeriod {
     /// Start timestamp of the charging period. This period ends when a next period starts, the
     /// last period ends when the session ends

@@ -5,7 +5,6 @@ use crate::session::ChargePeriod;
 use crate::types::money::Vat;
 use crate::types::{money::Money, time::DateTime};
 
-#[derive(Debug)]
 pub struct Tariffs(Vec<Tariff>);
 
 impl Tariffs {
@@ -21,7 +20,6 @@ impl Tariffs {
     }
 }
 
-#[derive(Debug)]
 pub struct Tariff {
     elements: Vec<TariffElement>,
     start_date_time: Option<DateTime>,
@@ -53,19 +51,19 @@ impl Tariff {
             }
 
             if components.time.is_none() {
-                components.time = tariff_element.components.time;
+                components.time = tariff_element.components.time.clone();
             }
 
             if components.parking.is_none() {
-                components.parking = tariff_element.components.parking;
+                components.parking = tariff_element.components.parking.clone();
             }
 
             if components.energy.is_none() {
-                components.energy = tariff_element.components.energy;
+                components.energy = tariff_element.components.energy.clone();
             }
 
             if components.flat.is_none() {
-                components.flat = tariff_element.components.flat;
+                components.flat = tariff_element.components.flat.clone();
             }
 
             if components.has_all_components() {
@@ -84,7 +82,6 @@ impl Tariff {
     }
 }
 
-#[derive(Debug)]
 struct TariffElement {
     restrictions: Vec<Restriction>,
     components: PriceComponents,
@@ -146,7 +143,6 @@ impl TariffElement {
     }
 }
 
-#[derive(Debug)]
 pub struct PriceComponents {
     pub flat: Option<PriceComponent>,
     pub energy: Option<PriceComponent>,
@@ -172,7 +168,7 @@ impl PriceComponents {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone)]
 pub struct PriceComponent {
     pub tariff_element_index: usize,
     pub price: Money,

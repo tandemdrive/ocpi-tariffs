@@ -10,7 +10,7 @@ use crate::types::{
 };
 
 /// The Tariff object describes a tariff and its properties
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct OcpiTariff {
     /// Code designating in which country this country is active.
     pub country_code: String,
@@ -35,7 +35,7 @@ pub struct OcpiTariff {
 }
 
 /// Days of the week.
-#[derive(Debug, Copy, PartialEq, Eq, Clone, Hash, Deserialize)]
+#[derive(Copy, PartialEq, Eq, Clone, Hash, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DayOfWeek {
     /// Monday
@@ -69,7 +69,7 @@ impl From<DayOfWeek> for Weekday {
 }
 
 /// Component of a tariff price.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct OcpiPriceComponent {
     /// Type of tariff dimension
     #[serde(rename = "type")]
@@ -89,7 +89,7 @@ pub struct OcpiPriceComponent {
 }
 
 /// Describes part of a tariff
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct OcpiTariffElement {
     /// List of price components that make up the pricing of this tariff
     pub price_components: Vec<OcpiPriceComponent>,
@@ -113,7 +113,7 @@ pub enum TariffDimensionType {
 }
 
 /// Indicates when a tariff applies
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct OcpiTariffRestriction {
     /// Start time of day, for example 13:30, valid from this time of the day.
     /// Must be in 24h format with leading zeros. Hour/Minute separator: “:” Regex
