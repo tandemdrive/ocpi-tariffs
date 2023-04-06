@@ -49,7 +49,7 @@ version.
 - Support OCPI version 2.1.1
 
   The tariff structure of version 2.1.1 is (mostly?) a subset of the structure
-  of 2.2.1 so in practise we expect this project to also be usable on 2.1.1.
+  of 2.2.1 so in practice we expect this project to also be usable on 2.1.1.
 
 ## Tariff structure overview
 
