@@ -1,13 +1,13 @@
 
 # OCPI tariffs CLI
 
-This crate provides a binary for doing calculations with [OCPI][ocpi]
-[tariffs][tariffs]. Specifically for the [`OCPI 2.2.1`](https://evroaming.org/app/uploads/2021/11/OCPI-2.2.1.pdf)
+This crate provides a binary for doing calculations with [OCPI](https://evroaming.org/ocpi-background/)
+[tariffs](https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module). Specifically for the [`OCPI 2.2.1`](https://evroaming.org/app/uploads/2021/11/OCPI-2.2.1.pdf)
 version.
 
 ## Installation
 
-```ignore
+```text
 cargo install ocpi-tariffs-cli
 ```
 
@@ -21,7 +21,7 @@ The binary can be directly executed using `ocpi-tariffs`. Execute `ocpi-tariffs 
 
 To price a tariff and CDR (Charge detail record) and see a breakdown of the separate periods use `analyze`:
 
-```ignore
+```text
 Analyze a given charge detail record (CDR) against either a provided tariff structure or a tariff that is contained in the CDR itself.
 
 This command will show you a breakdown of all the calculated costs.
@@ -52,7 +52,7 @@ Options:
 
 To price a tariff and CDR and check if the calculation differs from the original CDR use `validate`:
 
-```ignore
+```text
 Validate a given charge detail record (CDR) against either a provided tariff structure or a tariff that is contained in the CDR itself.
 
 This command will show the differences between the calculated totals and the totals contained in the provided CDR.
