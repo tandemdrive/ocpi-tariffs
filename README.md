@@ -1,7 +1,7 @@
 # OCPI tariffs
 
-This project provides software for doing calculations with [OCPI][ocpi]
-[tariffs][tariffs]. Specifically for the [`OCPI 2.2.1`](https://evroaming.org/app/uploads/2021/11/OCPI-2.2.1.pdf)
+This project provides software for doing calculations with [OCPI](https://evroaming.org/ocpi-background/)
+[tariffs](https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module). Specifically for the [`OCPI 2.2.1`](https://evroaming.org/app/uploads/2021/11/OCPI-2.2.1.pdf)
 version.
 
 [![crates-io]](https://crates.io/crates/ocpi-tariffs "Crates.io version")
