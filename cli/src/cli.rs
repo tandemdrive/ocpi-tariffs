@@ -4,6 +4,13 @@ use chrono::DateTime;
 use chrono_tz::Tz;
 use clap::{Args, Parser, Subcommand};
 use console::style;
+use tabled::{
+    format::Format,
+    object::{Rows, Segment},
+    width::MinWidth,
+    Alignment, Modify, Panel, Style, Table, Tabled,
+};
+
 use ocpi_tariffs::{
     ocpi::{cdr::Cdr, tariff::OcpiTariff},
     pricer::{DimensionReport, Pricer, Report},
@@ -12,12 +19,6 @@ use ocpi_tariffs::{
         money::{Money, Price, Vat},
         time::HoursDecimal,
     },
-};
-use tabled::{
-    format::Format,
-    object::{Rows, Segment},
-    width::MinWidth,
-    Alignment, Modify, Panel, Style, Table, Tabled,
 };
 
 use crate::{error::Error, Result};
@@ -31,7 +32,7 @@ pub struct Cli {
 impl Cli {
     pub fn run(self) {
         if let Err(err) = self.command.run() {
-            eprintln!("{}", err);
+            eprintln!("{err}");
             exit(1);
         }
     }
@@ -169,12 +170,12 @@ impl ValidateTable {
         self.row(
             report.excl_vat,
             cdr.map(|s| s.excl_vat),
-            &format!("{} excl. VAT", name),
+            &format!("{name} excl. VAT"),
         );
         self.row(
             report.incl_vat,
             cdr.map(|s| s.incl_vat),
-            &format!("{} incl. VAT", name),
+            &format!("{name} incl. VAT"),
         );
     }
 

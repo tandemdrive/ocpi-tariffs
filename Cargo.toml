@@ -10,8 +10,7 @@ license = "MIT OR Apache-2.0"
 members = ["cli", "ocpi-tariffs"]
 
 [workspace.dependencies]
-chrono-tz = "0.7.0"
-chrono = { version = "0.4.23", features = ["serde"] }
+chrono-tz = { version = "0.7.0", default-features = false }
 cli = { path = "cli", package = "ocpi-tariffs-cli", version = "0.2.0" }
 ocpi-tariffs = { path = "ocpi-tariffs", version = "0.2.0" }
-serde_json = { version = "1.0" }
+serde_json = { version = "1.0", default-features = false }
