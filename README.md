@@ -4,6 +4,21 @@ This project provides software for doing calculations with [OCPI][ocpi]
 [tariffs][tariffs]. Specifically for the [`OCPI 2.2.1`](https://evroaming.org/app/uploads/2021/11/OCPI-2.2.1.pdf)
 version.
 
+[![crates-io]](https://crates.io/crates/ocpi-tariffs "Crates.io version")
+[![docs-rs]](https://docs.rs/ocpi-tariffs "Documentation")
+[![unsafe-forbidden]](https://github.com/rust-secure-code/safety-dance/ "Unsafe forbidden")
+[![github-actions]](https://github.com/tandemdrive/ocpi-tariffs/actions "CI")
+[![github-activity]](https://github.com/tandemdrive/ocpi-tariffs/commits "Commit activity")
+
+[crates-io]: https://img.shields.io/crates/v/ocpi-tariffs.svg?logo=rust
+[docs-rs]: https://img.shields.io/docsrs/ocpi-tariffs/latest?logo=docs.rs
+[unsafe-forbidden]: https://img.shields.io/badge/unsafe-forbidden-success.svg
+[github-actions]: https://img.shields.io/github/actions/workflow/status/tandemdrive/ocpi-tariffs/rust.yml?branch=main
+[github-activity]: https://img.shields.io/github/last-commit/tandemdrive/ocpi-tariffs
+[ocpi]: https://evroaming.org/ocpi-background/
+[tariffs]: https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module
+
+
 ## Goals
 
 - Provide a reference OCPI tariff implementation
@@ -98,7 +113,3 @@ This contribution is dual licensed under EITHER OF
 at your option.
 
 For clarity, "your" refers to TandemDrive or any other licensee/user of the contribution.
-
-[ocpi]: https://evroaming.org/ocpi-background/
-[ocpi-gh]: https://github.com/ocpi/ocpi
-[tariffs]: https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module
