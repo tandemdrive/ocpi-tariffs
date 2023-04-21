@@ -13,7 +13,7 @@ version.
 [crates-io]: https://img.shields.io/crates/v/ocpi-tariffs.svg?logo=rust
 [docs-rs]: https://img.shields.io/docsrs/ocpi-tariffs/latest?logo=docs.rs
 [unsafe-forbidden]: https://img.shields.io/badge/unsafe-forbidden-success.svg
-[github-actions]: https://img.shields.io/github/actions/workflow/status/tandemdrive/ocpi-tariffs/ci.yml?branch=main
+[github-actions]: https://img.shields.io/github/actions/workflow/status/tandemdrive/ocpi-tariffs/rust.yml?branch=main
 [github-activity]: https://img.shields.io/github/last-commit/tandemdrive/ocpi-tariffs
 [ocpi]: https://evroaming.org/ocpi-background/
 [tariffs]: https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module
