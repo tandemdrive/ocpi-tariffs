@@ -1,7 +1,10 @@
 name: CI
 
 on:
+  push:
   pull_request:
+  workflow_dispatch:
+  schedule: [cron: "40 1 * * *"]
 
 concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
@@ -14,32 +17,46 @@ env:
 jobs: 
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
     - uses: actions/checkout@v3
     - run: cargo build --workspace --verbose
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
     - uses: actions/checkout@v3
     - run: cargo test --workspace --verbose
 
   clippy:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
     - uses: actions/checkout@v3
     - run: cargo clippy --workspace --all-targets --all-features
 
   format:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
     - uses: actions/checkout@v3
     - run: cargo fmt --all --check
 
   deny:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
     - uses: actions/checkout@v3
     - uses: EmbarkStudios/cargo-deny-action@v1
       with:
         arguments: --all-features --workspace
+
+  outdated:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/install@cargo-outdated
+      - run: cargo outdated --workspace -R --exit-code 1
