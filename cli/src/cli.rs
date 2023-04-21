@@ -5,10 +5,12 @@ use chrono_tz::Tz;
 use clap::{Args, Parser, Subcommand};
 use console::style;
 use tabled::{
-    format::Format,
-    object::{Rows, Segment},
-    width::MinWidth,
-    Alignment, Modify, Panel, Style, Table, Tabled,
+    settings::{
+        object::{Rows, Segment},
+        width::MinWidth,
+        Alignment, Format, Modify, Panel, Style,
+    },
+    Table, Tabled,
 };
 
 use ocpi_tariffs::{
@@ -240,7 +242,7 @@ impl Validate {
         let valid = table.valid_rows();
         let all_valid = valid.iter().all(|&s| s);
 
-        let format_valid = Modify::new(Rows::new(..)).with(Format::with_index(|row, (i, _)| {
+        let format_valid = Modify::new(Rows::new(..)).with(Format::positioned(|row, (i, _)| {
             let row = style(row);
             if i == 0 {
                 row.bold().to_string()
