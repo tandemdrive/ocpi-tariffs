@@ -5,7 +5,7 @@ This project provides software for doing calculations with [OCPI][ocpi]
 version.
 
 [![crates-io]](https://crates.io/crates/ocpi-tariffs "Crates.io version")
-[![Documentation]](https://docs.rs/ocpi-tariffs "Documentation")
+[![docs-rs]](https://docs.rs/ocpi-tariffs "Documentation")
 [![unsafe-forbidden]](https://github.com/rust-secure-code/safety-dance/ "Unsafe forbidden")
 [![github-actions]](https://github.com/tandemdrive/ocpi-tariffs/actions "CI")
 [![github-activity]](https://github.com/tandemdrive/ocpi-tariffs/commits "Commit activity")
