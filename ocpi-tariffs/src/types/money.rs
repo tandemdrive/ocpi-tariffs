@@ -5,12 +5,12 @@ use std::{
 
 use chrono::Duration;
 use rust_decimal_macros::dec;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use super::{electricity::Kwh, number::Number};
 
 /// A price consisting of a value including VAT, and a value excluding VAT.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Price {
     /// The price excluding VAT.
     pub excl_vat: Money,
@@ -60,7 +60,7 @@ impl Default for Price {
 }
 
 /// A monetary amount, the currency is dependant on the specified tariff.
-#[derive(Debug, Default, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
 #[serde(transparent)]
 pub struct Money(Number);
 
@@ -163,7 +163,7 @@ impl Display for Money {
 }
 
 /// A VAT percentage.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Deserialize, Serialize)]
 #[serde(transparent)]
 pub struct Vat(Number);
 

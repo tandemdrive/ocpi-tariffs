@@ -1,7 +1,7 @@
 //! The Tariff object describes a tariff and its properties
 
 use chrono::Weekday;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::types::{
     electricity::{Ampere, Kw, Kwh},
@@ -10,7 +10,7 @@ use crate::types::{
 };
 
 /// The Tariff object describes a tariff and its properties
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct OcpiTariff {
     /// Code designating in which country this country is active.
     pub country_code: String,
@@ -35,7 +35,7 @@ pub struct OcpiTariff {
 }
 
 /// Days of the week.
-#[derive(Copy, PartialEq, Eq, Clone, Hash, Deserialize)]
+#[derive(Copy, PartialEq, Eq, Clone, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DayOfWeek {
     /// Monday
@@ -69,7 +69,7 @@ impl From<DayOfWeek> for Weekday {
 }
 
 /// Component of a tariff price.
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct OcpiPriceComponent {
     /// Type of tariff dimension
     #[serde(rename = "type")]
@@ -89,7 +89,7 @@ pub struct OcpiPriceComponent {
 }
 
 /// Describes part of a tariff
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct OcpiTariffElement {
     /// List of price components that make up the pricing of this tariff
     pub price_components: Vec<OcpiPriceComponent>,
@@ -99,7 +99,7 @@ pub struct OcpiTariffElement {
 }
 
 /// Type of tariff component
-#[derive(Debug, Copy, PartialEq, Eq, Clone, Hash, Deserialize)]
+#[derive(Debug, Copy, PartialEq, Eq, Clone, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum TariffDimensionType {
     /// Defined in kWh, step_size multiplier: 1 Wh
@@ -113,7 +113,7 @@ pub enum TariffDimensionType {
 }
 
 /// Indicates when a tariff applies
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct OcpiTariffRestriction {
     /// Start time of day, for example 13:30, valid from this time of the day.
     /// Must be in 24h format with leading zeros. Hour/Minute separator: “:” Regex
@@ -162,7 +162,7 @@ pub struct OcpiTariffRestriction {
 }
 
 /// The type of reservation a tariff applies to.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ReservationRestrictionType {
     /// The tariff applies when the charge session is reserved.

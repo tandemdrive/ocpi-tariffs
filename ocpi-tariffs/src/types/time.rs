@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use chrono::Duration;
 use rust_decimal_macros::dec;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize, Serializer};
 
 use super::number::Number;
 
@@ -19,9 +19,17 @@ impl<'de> Deserialize<'de> for HoursDecimal {
         D: serde::Deserializer<'de>,
     {
         use serde::de::Error;
+
         let hours = <Number as serde::Deserialize>::deserialize(deserializer)?;
         let duration = Self::try_from(hours).map_err(|_e| D::Error::custom("overflow"))?;
         Ok(duration)
+    }
+}
+
+impl Serialize for HoursDecimal {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let decimal_hours: Number = self.into();
+        decimal_hours.serialize(serializer)
     }
 }
 
@@ -44,6 +52,23 @@ impl TryFrom<Number> for HoursDecimal {
         let millis = value * Number::from(dec!(3_600_000));
         let duration = Duration::milliseconds(millis.try_into()?);
         Ok(Self(duration))
+    }
+}
+
+impl From<&HoursDecimal> for Number {
+    fn from(value: &HoursDecimal) -> Self {
+        use rust_decimal::Decimal;
+
+        let seconds: Decimal = value.0.num_seconds().into();
+        let hours = seconds / dec!(3600);
+
+        hours.into()
+    }
+}
+
+impl From<HoursDecimal> for Number {
+    fn from(value: HoursDecimal) -> Self {
+        (&value).into()
     }
 }
 
@@ -91,6 +116,13 @@ impl<'de> Deserialize<'de> for SecondsRound {
     }
 }
 
+impl Serialize for SecondsRound {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let seconds = self.0.num_seconds();
+        serializer.serialize_i64(seconds)
+    }
+}
+
 impl From<SecondsRound> for Duration {
     fn from(value: SecondsRound) -> Self {
         value.0
@@ -98,7 +130,7 @@ impl From<SecondsRound> for Duration {
 }
 
 /// A OCPI specific local date, without a time.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize)]
 pub struct OcpiDate(chrono::NaiveDate);
 
 impl<'de> Deserialize<'de> for OcpiDate {
@@ -122,7 +154,7 @@ impl From<OcpiDate> for chrono::NaiveDate {
 }
 
 /// A OCPI specific local time, without a date.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Serialize)]
 pub struct OcpiTime(chrono::NaiveTime);
 
 impl<'de> Deserialize<'de> for OcpiTime {
@@ -142,5 +174,43 @@ impl<'de> Deserialize<'de> for OcpiTime {
 impl From<OcpiTime> for chrono::NaiveTime {
     fn from(value: OcpiTime) -> Self {
         value.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::Duration;
+    use rust_decimal_macros::dec;
+
+    use crate::types::number::Number;
+
+    use super::HoursDecimal;
+
+    #[test]
+    fn zero_minutes_should_be_zero_hours() {
+        let hours: HoursDecimal = Duration::minutes(0).into();
+        let number: Number = hours.into();
+        assert_eq!(number, Number::from(dec!(0.0)));
+    }
+
+    #[test]
+    fn thirty_minutes_should_be_fraction_of_hour() {
+        let hours: HoursDecimal = Duration::minutes(30).into();
+        let number: Number = hours.into();
+        assert_eq!(number, Number::from(dec!(0.5)));
+    }
+
+    #[test]
+    fn sixty_minutes_should_be_fraction_of_hour() {
+        let hours: HoursDecimal = Duration::minutes(60).into();
+        let number: Number = hours.into();
+        assert_eq!(number, Number::from(dec!(1.0)));
+    }
+
+    #[test]
+    fn ninety_minutes_should_be_fraction_of_hour() {
+        let hours: HoursDecimal = Duration::minutes(90).into();
+        let number: Number = hours.into();
+        assert_eq!(number, Number::from(dec!(1.5)));
     }
 }
