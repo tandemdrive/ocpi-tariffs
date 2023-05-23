@@ -4,12 +4,12 @@ use std::{
 };
 
 use rust_decimal_macros::dec;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use super::number::Number;
 
 /// A value of kilo watt hours.
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Default)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Default)]
 #[serde(transparent)]
 pub struct Kwh(Number);
 
@@ -75,12 +75,12 @@ impl Mul<Number> for Kwh {
 }
 
 /// A value of kilo watts.
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 #[serde(transparent)]
 pub struct Kw(Number);
 
 /// A value of amperes.
-#[derive(Debug, Deserialize, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 #[serde(transparent)]
 pub struct Ampere(Number);
 

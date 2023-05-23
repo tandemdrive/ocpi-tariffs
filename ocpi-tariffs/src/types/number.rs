@@ -3,9 +3,9 @@ use std::{
     ops::{Add, Div, Mul, Sub},
 };
 
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Serialize)]
 pub(crate) struct Number(rust_decimal::Decimal);
 
 impl Number {

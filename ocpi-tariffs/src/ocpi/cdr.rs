@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::ocpi::tariff::OcpiTariff;
 
@@ -9,7 +9,7 @@ use crate::types::{
 };
 
 /// The CDR object describes the Charging Session and its costs. How these costs are build up etc.
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Cdr {
     /// Start timestamp of the charging session.
     pub start_date_time: DateTime,
@@ -59,7 +59,7 @@ pub struct Cdr {
 }
 
 /// The volume that has been consumed for a specific dimension during a charging period.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE", tag = "type", content = "volume")]
 pub enum OcpiCdrDimension {
     /// Consumed energy in `kWh`.
@@ -81,7 +81,7 @@ pub enum OcpiCdrDimension {
 }
 
 /// A single charging period, containing a non empty list of charge dimensions.
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct OcpiChargingPeriod {
     /// Start timestamp of the charging period. This period ends when a next period starts, the
     /// last period ends when the session ends
