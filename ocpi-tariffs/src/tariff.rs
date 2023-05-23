@@ -77,8 +77,11 @@ impl Tariff {
     }
 
     pub fn is_active(&self, start_time: DateTime) -> bool {
-        let is_after_start = self.start_date_time.map_or(true, |s| start_time >= s);
-        let is_before_end = self.end_date_time.map_or(true, |s| start_time < s);
+        let is_after_start = self
+            .start_date_time
+            .map(|s| start_time >= s)
+            .unwrap_or(true);
+        let is_before_end = self.end_date_time.map(|s| start_time < s).unwrap_or(true);
 
         is_after_start && is_before_end
     }

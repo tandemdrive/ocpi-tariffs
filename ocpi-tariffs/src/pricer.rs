@@ -399,7 +399,11 @@ where
     /// The cost excluding VAT of this dimension during a period.
     pub fn cost_excl_vat(&self) -> Money {
         if let Some(volume) = self.billed_volume {
-            let price = self.price.as_ref().map_or_else(Money::zero, |c| c.price);
+            let price = self
+                .price
+                .as_ref()
+                .map(|c| c.price)
+                .unwrap_or_else(Money::zero);
             volume * price
         } else {
             Money::zero()
