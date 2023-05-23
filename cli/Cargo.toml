@@ -14,8 +14,8 @@ path = "src/main.rs"
 [dependencies]
 chrono-tz.workspace = true
 chrono = { version = "0.4.24", default-features = false, features = ["alloc", "serde"] }
-clap = { version = "4.2.4", features = ["derive"] }
-console = { version = "0.15.5" }
+clap = { version = "4.3.0", features = ["derive"] }
+console = { version = "0.15.7" }
 ocpi-tariffs.workspace = true
 serde_json.workspace = true
 tabled = { version = "0.12.0", features = ["color"] }
