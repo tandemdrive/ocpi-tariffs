@@ -52,6 +52,18 @@ jobs:
       with:
         arguments: --all-features --workspace
 
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - run: cargo doc --workspace --all-features --no-deps --document-private-items
+
   outdated:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
@@ -59,4 +71,4 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/install@cargo-outdated
-      - run: cargo outdated --workspace -R --exit-code 1
+      - run: cargo outdated --workspace --exit-code 1
