@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 use crate::ocpi::tariff::{OcpiPriceComponent, OcpiTariff, OcpiTariffElement, TariffDimensionType};
 
 use crate::restriction::{collect_restrictions, Restriction};
@@ -168,7 +170,7 @@ impl PriceComponents {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct PriceComponent {
     pub tariff_element_index: usize,
     pub price: Money,

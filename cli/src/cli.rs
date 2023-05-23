@@ -200,9 +200,9 @@ impl Validate {
 
         let mut table = ValidateTable { rows: Vec::new() };
 
-        table.row(report.total_time.into(), Some(cdr.total_time), "Total Time");
+        table.row(report.total_time, Some(cdr.total_time), "Total Time");
         table.row(
-            report.total_parking_time.into(),
+            report.total_parking_time,
             cdr.total_parking_time,
             "Total Parking time",
         );
