@@ -9,12 +9,14 @@ use crate::{
         electricity::Kwh,
         money::{Money, Price},
         number::Number,
+        time::HoursDecimal,
     },
     Error, Result,
 };
 
 use chrono::{DateTime, Duration, Utc};
 use chrono_tz::Tz;
+use serde::Serialize;
 
 /// Pricer that encapsulates a single charge-session and a list of tariffs.
 /// To run the pricer call `build_report`. The resulting report contains the totals, subtotals and a breakdown of the
@@ -67,8 +69,8 @@ impl Pricer {
         let mut step_size = StepSize::new();
 
         let mut total_energy = Kwh::zero();
-        let mut total_charging_time = Duration::zero();
-        let mut total_parking_time = Duration::zero();
+        let mut total_charging_time = HoursDecimal::zero();
+        let mut total_parking_time = HoursDecimal::zero();
 
         for (index, period) in self.session.periods.iter().enumerate() {
             let components = tariff.active_components(period);
@@ -77,15 +79,20 @@ impl Pricer {
 
             let dimensions = Dimensions::new(components, &period.period_data);
 
-            total_charging_time =
-                total_charging_time + dimensions.time.volume.unwrap_or_else(Duration::zero);
+            total_charging_time.0 = total_charging_time.0
+                + dimensions
+                    .time
+                    .volume
+                    .map(|hms| hms.0)
+                    .unwrap_or_else(Duration::zero);
 
             total_energy += dimensions.energy.volume.unwrap_or_else(Kwh::zero);
 
-            total_parking_time = total_parking_time
+            total_parking_time.0 = total_parking_time.0
                 + dimensions
                     .parking_time
                     .volume
+                    .map(|hms| hms.0)
                     .unwrap_or_else(Duration::zero);
 
             periods.push(PeriodReport::new(period, dimensions));
@@ -111,9 +118,9 @@ impl Pricer {
 
         let total_time = if let Some(first) = periods.first() {
             let last = periods.last().unwrap();
-            last.end_date_time - first.start_date_time
+            (last.end_date_time - first.start_date_time).into()
         } else {
-            Duration::zero()
+            HoursDecimal::zero()
         };
 
         let total_cost =
@@ -177,11 +184,11 @@ impl StepSize {
     }
 
     fn duration_step_size(
-        total: Duration,
-        billed_volume: &mut Duration,
+        total: HoursDecimal,
+        billed_volume: &mut HoursDecimal,
         step_size: u64,
-    ) -> Duration {
-        let total_seconds = Number::from(total.num_seconds());
+    ) -> HoursDecimal {
+        let total_seconds = Number::from(total.0.num_seconds());
         let step_size = Number::from(step_size);
 
         let priced_total_seconds = ((total_seconds / step_size).ceil() * step_size)
@@ -189,13 +196,13 @@ impl StepSize {
             .expect("overflow");
 
         let priced_total = Duration::seconds(priced_total_seconds);
-        let difference = priced_total - total;
-        *billed_volume = *billed_volume + difference;
+        let difference = priced_total - total.0;
+        billed_volume.0 = billed_volume.0 + difference;
 
-        priced_total
+        priced_total.into()
     }
 
-    fn apply_time(&self, periods: &mut [PeriodReport], total: Duration) -> Duration {
+    fn apply_time(&self, periods: &mut [PeriodReport], total: HoursDecimal) -> HoursDecimal {
         if let (Some((time_index, price)), None) = (&self.time, &self.parking_time) {
             let period = &mut periods[*time_index];
             let volume = &mut period
@@ -210,7 +217,11 @@ impl StepSize {
         }
     }
 
-    fn apply_parking_time(&self, periods: &mut [PeriodReport], total: Duration) -> Duration {
+    fn apply_parking_time(
+        &self,
+        periods: &mut [PeriodReport],
+        total: HoursDecimal,
+    ) -> HoursDecimal {
         if let Some((parking_index, price)) = &self.parking_time {
             let period = &mut periods[*parking_index];
             let volume = period
@@ -249,6 +260,7 @@ impl StepSize {
 
 /// Structure containing the charge session priced according to the specified tariff.
 /// The fields prefixed `total` correspond to CDR fields with the same name.
+#[derive(Serialize)]
 pub struct Report {
     /// Charge session details per period.
     pub periods: Vec<PeriodReport>,
@@ -259,17 +271,17 @@ pub struct Report {
     /// Total sum of all the cost related to duration of charging during this transaction, in the specified currency.
     pub total_time_cost: Price,
     /// Total duration of the charging session (including the duration of charging and not charging), in hours.
-    pub total_time: Duration,
+    pub total_time: HoursDecimal,
     /// Total duration of the charging session (excluding not charging), in hours.
-    pub total_charging_time: Duration,
+    pub total_charging_time: HoursDecimal,
     /// The total charging time after applying step-size.
-    pub billed_charging_time: Duration,
+    pub billed_charging_time: HoursDecimal,
     /// Total sum of all the cost related to parking of this transaction, including fixed price components, in the specified currency.
     pub total_parking_cost: Price,
     /// Total duration of the charging session where the EV was not charging (no energy was transferred between EVSE and EV), in hours.
-    pub total_parking_time: Duration,
+    pub total_parking_time: HoursDecimal,
     /// The total parking time after applying step-size
-    pub billed_parking_time: Duration,
+    pub billed_parking_time: HoursDecimal,
     /// Total sum of all the cost of all the energy used, in the specified currency.
     pub total_energy_cost: Price,
     /// Total energy charged, in kWh.
@@ -283,6 +295,7 @@ pub struct Report {
 }
 
 /// A report for a single period that occurred during a session.
+#[derive(Serialize)]
 pub struct PeriodReport {
     /// The start time of this period.
     pub start_date_time: DateTime<Utc>,
@@ -311,28 +324,33 @@ impl PeriodReport {
 }
 
 /// A structure containing a report for each dimension.
+#[derive(Serialize)]
 pub struct Dimensions {
     /// The flat dimension.
     pub flat: DimensionReport<()>,
     /// The energy dimension.
     pub energy: DimensionReport<Kwh>,
     /// The time dimension.
-    pub time: DimensionReport<Duration>,
+    pub time: DimensionReport<HoursDecimal>,
     /// The parking time dimension.
-    pub parking_time: DimensionReport<Duration>,
+    pub parking_time: DimensionReport<HoursDecimal>,
 }
 
 impl Dimensions {
     pub(crate) fn new(components: PriceComponents, data: &PeriodData) -> Self {
         Self {
-            parking_time: DimensionReport::new(components.parking, data.parking_duration),
-            time: DimensionReport::new(components.time, data.duration),
+            parking_time: DimensionReport::new(
+                components.parking,
+                data.parking_duration.map(Into::into),
+            ),
+            time: DimensionReport::new(components.time, data.duration.map(Into::into)),
             energy: DimensionReport::new(components.energy, data.energy),
             flat: DimensionReport::new(components.flat, Some(())),
         }
     }
 }
 
+#[derive(Serialize)]
 /// A report for a single dimension during a single period.
 pub struct DimensionReport<V> {
     /// The price component that was active during this period for this dimension.
@@ -381,7 +399,11 @@ where
     /// The cost excluding VAT of this dimension during a period.
     pub fn cost_excl_vat(&self) -> Money {
         if let Some(volume) = self.billed_volume {
-            let price = self.price.as_ref().map_or_else(Money::zero, |c| c.price);
+            let price = self
+                .price
+                .as_ref()
+                .map(|c| c.price)
+                .unwrap_or_else(Money::zero);
             volume * price
         } else {
             Money::zero()

@@ -3,11 +3,10 @@ use std::{
     ops::{Add, AddAssign, Mul},
 };
 
-use chrono::Duration;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 
-use super::{electricity::Kwh, number::Number};
+use super::{electricity::Kwh, number::Number, time::HoursDecimal};
 
 /// A price consisting of a value including VAT, and a value excluding VAT.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
@@ -115,18 +114,18 @@ impl Mul<Money> for Kwh {
     }
 }
 
-impl Mul<Duration> for Money {
+impl Mul<HoursDecimal> for Money {
     type Output = Money;
 
-    fn mul(self, rhs: Duration) -> Self::Output {
+    fn mul(self, rhs: HoursDecimal) -> Self::Output {
         let duration =
-            self.0 * (Number::from(rhs.num_milliseconds()) / Number::from(dec!(3_600_000)));
+            self.0 * (Number::from(rhs.0.num_milliseconds()) / Number::from(dec!(3_600_000)));
 
         Self(duration)
     }
 }
 
-impl Mul<Money> for Duration {
+impl Mul<Money> for HoursDecimal {
     type Output = Money;
 
     fn mul(self, rhs: Money) -> Self::Output {

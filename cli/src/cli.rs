@@ -85,15 +85,17 @@ pub struct TariffArgs {
 
 impl TariffArgs {
     fn cdr_name(&self) -> Cow<'_, str> {
-        self.cdr.as_ref().map_or("<stdin>".into(), |c| {
-            c.file_name().unwrap().to_string_lossy()
-        })
+        self.cdr
+            .as_ref()
+            .map(|c| c.file_name().unwrap().to_string_lossy())
+            .unwrap_or_else(|| "<stdin>".into())
     }
 
     fn tariff_name(&self) -> Cow<'_, str> {
-        self.tariff.as_ref().map_or("<CDR-tariff>".into(), |c| {
-            c.file_name().unwrap().to_string_lossy()
-        })
+        self.tariff
+            .as_ref()
+            .map(|c| c.file_name().unwrap().to_string_lossy())
+            .unwrap_or_else(|| "<CDR-tariff>".into())
     }
 
     fn load_all(&self) -> Result<(Report, Cdr, Option<OcpiTariff>)> {
@@ -161,7 +163,9 @@ impl ValidateTable {
         let row = ValidateRow {
             property: name.to_string(),
             calculated: report.to_string(),
-            cdr: cdr.map_or("<missing>".into(), |s| s.to_string()),
+            cdr: cdr
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "<missing>".into()),
             valid,
         };
 
@@ -200,9 +204,9 @@ impl Validate {
 
         let mut table = ValidateTable { rows: Vec::new() };
 
-        table.row(report.total_time.into(), Some(cdr.total_time), "Total Time");
+        table.row(report.total_time, Some(cdr.total_time), "Total Time");
         table.row(
-            report.total_parking_time.into(),
+            report.total_parking_time,
             cdr.total_parking_time,
             "Total Parking time",
         );

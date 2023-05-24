@@ -3,7 +3,6 @@ use std::{
     path::PathBuf,
 };
 
-use chrono::Duration;
 use chrono_tz::Tz;
 use ocpi_tariffs::{
     ocpi::{cdr::Cdr, tariff::OcpiTariff},
@@ -87,11 +86,7 @@ pub fn validate_cdr(cdr: Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::Er
         "total_energy_cost"
     );
 
-    assert_eq!(
-        Duration::from(cdr.total_time),
-        report.total_time,
-        "total_time"
-    );
+    assert_eq!(cdr.total_time, report.total_time, "total_time");
 
     assert_eq!(
         cdr.total_time_cost.unwrap_or_default(),
@@ -100,7 +95,7 @@ pub fn validate_cdr(cdr: Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::Er
     );
 
     assert_eq!(
-        Duration::from(cdr.total_parking_time.unwrap_or_default()),
+        cdr.total_parking_time.unwrap_or_default(),
         report.total_parking_time,
         "total_parking_time"
     );

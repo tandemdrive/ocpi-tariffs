@@ -11,7 +11,7 @@ pub type DateTime = chrono::DateTime<chrono::Utc>;
 
 /// A generic duration type that converts from and to a decimal amount of hours.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct HoursDecimal(Duration);
+pub struct HoursDecimal(pub(crate) Duration);
 
 impl<'de> Deserialize<'de> for HoursDecimal {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -28,8 +28,21 @@ impl<'de> Deserialize<'de> for HoursDecimal {
 
 impl Serialize for HoursDecimal {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let decimal_hours: Number = self.into();
-        decimal_hours.serialize(serializer)
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl Display for HoursDecimal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        const SECS_IN_MIN: i64 = 60;
+        const MINS_IN_HOUR: i64 = 60;
+
+        let duration = self.0;
+        let seconds = duration.num_seconds() % SECS_IN_MIN;
+        let minutes = (duration.num_seconds() / SECS_IN_MIN) % MINS_IN_HOUR;
+        let hours = duration.num_seconds() / (SECS_IN_MIN * MINS_IN_HOUR);
+
+        write!(f, "{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds)
     }
 }
 
@@ -81,16 +94,6 @@ impl HoursDecimal {
 impl Default for HoursDecimal {
     fn default() -> Self {
         Self::zero()
-    }
-}
-
-impl Display for HoursDecimal {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let duration = self.0;
-        let seconds = duration.num_seconds() % 60;
-        let minutes = (duration.num_seconds() / 60) % 60;
-        let hours = (duration.num_seconds() / 60) / 60;
-        write!(f, "{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds)
     }
 }
 
@@ -178,7 +181,7 @@ impl From<OcpiTime> for chrono::NaiveTime {
 }
 
 #[cfg(test)]
-mod tests {
+mod hour_decimal_tests {
     use chrono::Duration;
     use rust_decimal_macros::dec;
 

@@ -168,12 +168,20 @@ impl Restriction {
         match *self {
             Self::MinCurrent(min_current) => state
                 .min_current
-                .map_or(true, |current| current >= min_current),
+                .map(|current| current >= min_current)
+                .unwrap_or(true),
             Self::MaxCurrent(max_current) => state
                 .max_current
-                .map_or(true, |current| current < max_current),
-            Self::MinPower(min_power) => state.min_power.map_or(true, |power| power >= min_power),
-            Self::MaxPower(max_power) => state.max_power.map_or(true, |power| power < max_power),
+                .map(|current| current < max_current)
+                .unwrap_or(true),
+            Self::MinPower(min_power) => state
+                .min_power
+                .map(|power| power >= min_power)
+                .unwrap_or(true),
+            Self::MaxPower(max_power) => state
+                .max_power
+                .map(|power| power < max_power)
+                .unwrap_or(true),
             _ => true,
         }
     }
