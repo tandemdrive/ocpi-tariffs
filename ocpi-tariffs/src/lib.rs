@@ -1,5 +1,8 @@
 #![deny(missing_docs)]
-#![doc = include_str!("../../README.md")]
+//! # OCPI Tariffs library
+//!
+//! Functionality to calculate the (sub)totals of a charge session. Use the
+//! [`pricer::Pricer`] to perform the actual calculation.
 
 use std::fmt;
 
