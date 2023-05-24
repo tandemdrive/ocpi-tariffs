@@ -1,10 +1,6 @@
 name: CI
 
-on:
-  push:
-  pull_request:
-  workflow_dispatch:
-  schedule: [cron: "40 1 * * *"]
+on: [push, pull_request]
 
 concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
@@ -63,12 +59,3 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
       - run: cargo doc --workspace --all-features --no-deps --document-private-items
-
-  outdated:
-    runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/install@cargo-outdated
-      - run: cargo outdated --workspace --exit-code 1
