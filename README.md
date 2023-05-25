@@ -1,8 +1,11 @@
 # OCPI tariffs
 
 This project provides software for doing calculations with [OCPI](https://evroaming.org/ocpi-background/)
-[tariffs](https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module). Specifically for the [`OCPI 2.2.1`](https://evroaming.org/app/uploads/2021/11/OCPI-2.2.1.pdf)
+[tariffs](https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module).
+Specifically for the [`OCPI 2.2.1`](https://evroaming.org/app/uploads/2021/11/OCPI-2.2.1.pdf)
 version.
+
+You can test the OCPI tariff tool [online](https://www.ocpi-tools.com/).
 
 [![crates-io]](https://crates.io/crates/ocpi-tariffs "Crates.io version")
 [![docs-rs]](https://docs.rs/ocpi-tariffs "Documentation")
@@ -18,6 +21,8 @@ version.
 [ocpi]: https://evroaming.org/ocpi-background/
 [tariffs]: https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module
 
+OCPI is a protocol owned and maintained by the <a
+href="https://evroaming.org/">EV Roaming foundation</a>.
 
 ## Goals
 
