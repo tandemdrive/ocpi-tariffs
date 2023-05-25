@@ -1,6 +1,6 @@
 {
     "start_date_time": "2022-01-13T14:30:00Z",
-    "stop_date_time": "2022-01-13T15:30:00Z",
+    "end_date_time": "2022-01-13T15:30:00Z",
     "currency": "EUR",
     "tariffs": [],
     "charging_periods": [

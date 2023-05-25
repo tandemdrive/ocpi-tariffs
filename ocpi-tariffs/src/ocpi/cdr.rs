@@ -15,7 +15,7 @@ pub struct Cdr {
     pub start_date_time: DateTime,
 
     /// Stop timestamp of the charging session.
-    pub stop_date_time: DateTime,
+    pub end_date_time: DateTime,
 
     /// Currency of the CDR in ISO 4217 Code.
     pub currency: String,

@@ -22,7 +22,7 @@ impl ChargeSession {
             let end_date_time = if let Some(next_period) = cdr.charging_periods.get(i + 1) {
                 next_period.start_date_time
             } else {
-                cdr.stop_date_time
+                cdr.end_date_time
             };
 
             let next = if let Some(last) = periods.last() {
