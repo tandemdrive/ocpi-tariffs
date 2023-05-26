@@ -1,12 +1,5 @@
 # OCPI tariffs
 
-This project provides software for doing calculations with [OCPI](https://evroaming.org/ocpi-background/)
-[tariffs](https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module).
-Specifically for the [`OCPI 2.2.1`](https://evroaming.org/app/uploads/2021/11/OCPI-2.2.1.pdf)
-version.
-
-You can test the tariff tool [online](https://tools.tandemdrive.com/).
-
 [![crates-io]](https://crates.io/crates/ocpi-tariffs "Crates.io version")
 [![docs-rs]](https://docs.rs/ocpi-tariffs "Documentation")
 [![unsafe-forbidden]](https://github.com/rust-secure-code/safety-dance/ "Unsafe forbidden")
@@ -21,8 +14,15 @@ You can test the tariff tool [online](https://tools.tandemdrive.com/).
 [ocpi]: https://evroaming.org/ocpi-background/
 [tariffs]: https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module
 
-OCPI is a protocol owned and maintained by the
-<a href="https://evroaming.org/">EV Roaming foundation</a>.
+This project provides software for doing calculations with [OCPI](https://evroaming.org/ocpi-background/)
+[tariffs](https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module).
+Specifically for the [`OCPI 2.2.1`](https://evroaming.org/app/uploads/2021/11/OCPI-2.2.1.pdf)
+version.
+
+You can test the tariff tool [online](https://tools.tandemdrive.com/).
+
+OCPI is a protocol owned and maintained by the [EV Roaming
+foundation](https://evroaming.org/).
 
 ## Goals
 
