@@ -205,10 +205,11 @@ impl StepSize {
     fn apply_time(&self, periods: &mut [PeriodReport], total: HoursDecimal) -> HoursDecimal {
         if let (Some((time_index, price)), None) = (&self.time, &self.parking_time) {
             let period = &mut periods[*time_index];
-            let volume = &mut period
+            let volume = period
                 .dimensions
                 .time
                 .billed_volume
+                .as_mut()
                 .expect("dimension should have a volume");
 
             Self::duration_step_size(total, volume, price.step_size)
@@ -240,16 +241,18 @@ impl StepSize {
     fn apply_energy(&self, periods: &mut [PeriodReport], total: Kwh) -> Kwh {
         if let Some((energy_index, price)) = &self.energy {
             let period = &mut periods[*energy_index];
-            let volume = &mut period
+
+            let volume = period
                 .dimensions
                 .energy
                 .billed_volume
+                .as_mut()
                 .expect("dimension should have a volume");
 
             let step_size = Number::from(price.step_size);
-
             let billed = Kwh::from_watt_hours((total.watt_hours() / step_size).ceil() * step_size);
-            *volume += total - billed;
+
+            *volume += billed - total;
 
             billed
         } else {

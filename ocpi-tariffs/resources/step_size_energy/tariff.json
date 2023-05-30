@@ -1,0 +1,48 @@
+{
+  "country_code": "DE",
+  "party_id": "ALL",
+  "id": "22",
+  "currency": "EUR",
+  "elements": [
+    {
+      "price_components": [
+       {
+          "type": "ENERGY",
+          "price": 2,
+          "step_size": 8000
+        }
+     ],
+      "restrictions" : {
+        "start_time" : "00:00",
+        "end_time" : "17:00"
+      }
+    },
+    {
+      "price_components": [
+        {
+          "type": "ENERGY",
+          "price": 2,
+          "step_size": 5000
+        }
+      ],
+      "restrictions" : {
+        "start_time" : "17:00",
+        "end_time" : "20:00"
+      }
+    },
+    {
+      "price_components": [
+        {
+          "type": "ENERGY",
+          "price": 4,
+          "step_size": 2000
+        }
+      ],
+      "restrictions" : {
+        "start_time" : "20:00",
+        "end_time" : "00:00"
+      }
+    }
+  ],
+  "last_updated": "2018-12-18T17:07:11Z"
+}
