@@ -16,3 +16,4 @@ serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
 serde_json.workspace = true
+test-each = { version = "0.2.1" }
