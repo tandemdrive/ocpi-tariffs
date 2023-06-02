@@ -1,12 +1,11 @@
 //! The Tariff object describes a tariff and its properties
 
-use chrono::Weekday;
 use serde::{Deserialize, Serialize};
 
 use crate::types::{
     electricity::{Kw, Kwh},
     money::Money,
-    time::{DateTime, OcpiDate, OcpiTime, SecondsRound},
+    time::{DateTime, DayOfWeek, OcpiDate, OcpiTime, SecondsRound},
 };
 
 /// The Tariff object describes a tariff and its properties
@@ -23,40 +22,6 @@ pub struct OcpiTariff {
 
     /// End time when this tariff becomes active.
     pub end_date_time: Option<DateTime>,
-}
-
-/// Days of the week.
-#[derive(Copy, PartialEq, Eq, Clone, Hash, Deserialize, Serialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum DayOfWeek {
-    /// Monday
-    Monday,
-    /// Tuesday
-    Tuesday,
-    /// Wednesday
-    Wednesday,
-    /// Thursday
-    Thursday,
-    /// Friday
-    Friday,
-    /// Saturday
-    Saturday,
-    /// Sunday
-    Sunday,
-}
-
-impl From<DayOfWeek> for Weekday {
-    fn from(day: DayOfWeek) -> Self {
-        match day {
-            DayOfWeek::Monday => Self::Mon,
-            DayOfWeek::Tuesday => Self::Tue,
-            DayOfWeek::Wednesday => Self::Wed,
-            DayOfWeek::Thursday => Self::Thu,
-            DayOfWeek::Friday => Self::Fri,
-            DayOfWeek::Saturday => Self::Sat,
-            DayOfWeek::Sunday => Self::Sun,
-        }
-    }
 }
 
 /// Component of a tariff price.
