@@ -1,9 +1,18 @@
-use std::{borrow::Cow, fmt::Display, fs::File, io::stdin, ops::Mul, path::PathBuf, process::exit};
+use std::{
+    borrow::Cow,
+    fmt::Display,
+    fs::File,
+    io::{stdin, Read},
+    ops::Mul,
+    path::PathBuf,
+    process::exit,
+};
 
 use chrono::DateTime;
 use chrono_tz::Tz;
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use console::style;
+use serde::de::DeserializeOwned;
 use tabled::{
     settings::{
         object::{Rows, Segment},
@@ -17,6 +26,7 @@ use ocpi_tariffs::{
     ocpi::{
         cdr::Cdr,
         tariff::{CompatibilityVat, OcpiTariff},
+        v211,
     },
     pricer::{DimensionReport, Pricer, Report},
     types::{
@@ -84,6 +94,8 @@ pub struct TariffArgs {
     /// Timezone for evaluating any local times contained in the tariff structure.
     #[arg(short = 'z', long, default_value = "Europe/Amsterdam")]
     timezone: Tz,
+    #[arg(short = 'o', long, value_enum, default_value_t = OcpiVersion::default())]
+    ocpi_version: OcpiVersion,
 }
 
 impl TariffArgs {
@@ -104,18 +116,22 @@ impl TariffArgs {
     fn load_all(&self) -> Result<(Report, Cdr, Option<OcpiTariff>)> {
         let cdr: Cdr = if let Some(cdr_path) = &self.cdr {
             let file = File::open(cdr_path).map_err(|e| Error::file(cdr_path.clone(), e))?;
-            serde_json::from_reader(&file)
+
+            from_reader_with_version::<_, _, v211::cdr::Cdr>(file, self.ocpi_version)
                 .map_err(|e| Error::deserialize(cdr_path.display(), "CDR", e))?
         } else {
             let mut stdin = stdin().lock();
-            serde_json::from_reader(&mut stdin)
+            from_reader_with_version::<_, _, v211::cdr::Cdr>(&mut stdin, self.ocpi_version)
                 .map_err(|e| Error::deserialize("<stdin>", "CDR", e))?
         };
 
         let tariff: Option<OcpiTariff> = if let Some(path) = &self.tariff {
             let file = File::open(path).map_err(|e| Error::file(path.clone(), e))?;
-            serde_json::from_reader(&file)
-                .map_err(|e| Error::deserialize(path.display(), "tariff", e))?
+
+            Some(
+                from_reader_with_version::<_, _, v211::tariff::OcpiTariff>(file, self.ocpi_version)
+                    .map_err(|e| Error::deserialize(path.display(), "tariff", e))?,
+            )
         } else {
             None
         };
@@ -130,6 +146,39 @@ impl TariffArgs {
 
         Ok((report, cdr, tariff))
     }
+}
+
+pub fn from_reader_with_version<R, T0, T1>(
+    mut reader: R,
+    version: OcpiVersion,
+) -> std::io::Result<T0>
+where
+    R: Read,
+    T0: DeserializeOwned + From<T1>,
+    T1: DeserializeOwned,
+{
+    match version {
+        OcpiVersion::V221 => Ok(serde_json::from_reader::<R, T0>(reader)?),
+        OcpiVersion::V211 => Ok(serde_json::from_reader::<R, T1>(reader)?.into()),
+        OcpiVersion::Detect => {
+            let mut content = Vec::new();
+            reader.read_to_end(&mut content)?;
+
+            serde_json::from_slice::<T0>(&content).or_else(|err| {
+                Ok(serde_json::from_slice::<T1>(&content)
+                    .map_err(|_old_err| err)?
+                    .into())
+            })
+        }
+    }
+}
+
+#[derive(Clone, Copy, Default, ValueEnum)]
+pub enum OcpiVersion {
+    #[default]
+    V221,
+    V211,
+    Detect,
 }
 
 #[derive(Parser)]
