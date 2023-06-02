@@ -14,11 +14,14 @@ use tabled::{
 };
 
 use ocpi_tariffs::{
-    ocpi::{cdr::Cdr, tariff::OcpiTariff},
+    ocpi::{
+        cdr::Cdr,
+        tariff::{CompatibilityVat, OcpiTariff},
+    },
     pricer::{DimensionReport, Pricer, Report},
     types::{
         electricity::Kwh,
-        money::{Money, Price, Vat},
+        money::{Money, Price},
         time::HoursDecimal,
     },
 };
@@ -143,8 +146,25 @@ struct ValidateRow {
     calculated: String,
     #[tabled(rename = "CDR")]
     cdr: String,
-    #[tabled(rename = "Valid")]
-    valid: bool,
+    #[tabled(rename = "Validity")]
+    validity: Validity,
+}
+
+#[derive(Clone, Copy)]
+pub enum Validity {
+    Valid,
+    Invalid,
+    Unknown,
+}
+
+impl Display for Validity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Valid => "valid",
+            Self::Invalid => "invalid",
+            Self::Unknown => "unknown",
+        })
+    }
 }
 
 struct ValidateTable {
@@ -154,19 +174,29 @@ struct ValidateTable {
 impl ValidateTable {
     pub fn row<T: Display + Eq + Default + Clone>(
         &mut self,
-        report: T,
+        report: Option<T>,
         cdr: Option<T>,
         name: &str,
     ) {
-        let valid = report == cdr.clone().unwrap_or_default();
+        let validity = if let (Some(cdr), Some(report)) = (&cdr, &report) {
+            if cdr == report {
+                Validity::Valid
+            } else {
+                Validity::Invalid
+            }
+        } else {
+            Validity::Unknown
+        };
 
         let row = ValidateRow {
             property: name.to_string(),
-            calculated: report.to_string(),
+            calculated: report
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "<missing>".into()),
             cdr: cdr
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| "<missing>".into()),
-            valid,
+            validity,
         };
 
         self.rows.push(row);
@@ -174,19 +204,19 @@ impl ValidateTable {
 
     pub fn price_row(&mut self, report: Price, cdr: Option<Price>, name: &str) {
         self.row(
-            report.excl_vat,
+            Some(report.excl_vat),
             cdr.map(|s| s.excl_vat),
             &format!("{name} excl. VAT"),
         );
         self.row(
             report.incl_vat,
-            cdr.map(|s| s.incl_vat),
+            cdr.and_then(|s| s.incl_vat),
             &format!("{name} incl. VAT"),
         );
     }
 
-    pub fn valid_rows(&self) -> Vec<bool> {
-        self.rows.iter().map(|r| r.valid).collect()
+    pub fn valid_rows(&self) -> Vec<Validity> {
+        self.rows.iter().map(|r| r.validity).collect()
     }
 }
 
@@ -204,56 +234,60 @@ impl Validate {
 
         let mut table = ValidateTable { rows: Vec::new() };
 
-        table.row(report.total_time, Some(cdr.total_time), "Total Time");
+        table.row(Some(report.total_time), Some(cdr.total_time), "Total Time");
         table.row(
-            report.total_parking_time,
+            Some(report.total_parking_time),
             cdr.total_parking_time,
             "Total Parking time",
         );
         table.row(
-            report.total_energy.with_scale(),
+            Some(report.total_energy.with_scale()),
             Some(cdr.total_energy),
             "Total Energy",
         );
 
         table.price_row(
-            report.total_cost.with_scale(),
+            report.total_cost.unwrap_or_default().with_scale(),
             Some(cdr.total_cost),
             "Total Cost",
         );
 
         table.price_row(
-            report.total_time_cost.with_scale(),
+            report.total_time_cost.unwrap_or_default().with_scale(),
             cdr.total_time_cost,
             "Total Time cost",
         );
         table.price_row(
-            report.total_fixed_cost.with_scale(),
+            report.total_fixed_cost.unwrap_or_default().with_scale(),
             cdr.total_fixed_cost,
             "Total Fixed cost",
         );
         table.price_row(
-            report.total_energy_cost.with_scale(),
+            report.total_energy_cost.unwrap_or_default().with_scale(),
             cdr.total_energy_cost,
             "Total Energy cost",
         );
         table.price_row(
-            report.total_parking_cost.with_scale(),
+            report.total_parking_cost.unwrap_or_default().with_scale(),
             cdr.total_parking_cost,
             "Total Parking cost",
         );
 
         let valid = table.valid_rows();
-        let all_valid = valid.iter().all(|&s| s);
+        let is_invalid = valid.iter().any(|&s| matches!(s, Validity::Invalid));
 
         let format_valid = Modify::new(Rows::new(..)).with(Format::positioned(|row, (i, _)| {
             let row = style(row);
             if i == 0 {
                 row.bold().to_string()
-            } else if valid[i - 1] {
-                row.green().to_string()
+            } else if let Some(valid) = valid.get(i - 1) {
+                match valid {
+                    Validity::Valid => row.green().to_string(),
+                    Validity::Unknown => row.yellow().to_string(),
+                    Validity::Invalid => row.red().to_string(),
+                }
             } else {
-                row.red().to_string()
+                row.to_string()
             }
         }));
 
@@ -264,18 +298,18 @@ impl Validate {
                 .with(format_valid)
         );
 
-        if all_valid {
-            println!(
-                "Calculation {} all totals in the CDR.\n",
-                style("matches").green().bold()
-            );
-        } else {
+        if is_invalid {
             println!(
                 "Calculation {} all totals in the CDR.\n",
                 style("does not match").red().bold()
             );
 
             exit(1);
+        } else {
+            println!(
+                "Calculation {} all totals in the CDR.\n",
+                style("matches").green().bold()
+            );
         }
 
         Ok(())
@@ -340,14 +374,21 @@ impl<V: Display> PeriodTable<V> {
     where
         T: Into<V> + Mul<Money, Output = Money> + Copy,
     {
+        let cost = dim.cost();
         self.rows.push(PeriodComponent {
             time,
             price: dim.price.as_ref().map(|p| p.price).into(),
             volume: dim.volume.map(Into::into).into(),
             billed_volume: dim.billed_volume.map(Into::into).into(),
-            vat: dim.price.as_ref().and_then(|p| p.vat).into(),
-            cost_excl_vat: dim.cost_excl_vat(),
-            cost_incl_vat: dim.cost_incl_vat(),
+            vat: dim.price.as_ref().map(|p| p.vat),
+            cost_excl_vat: cost.map(|c| c.excl_vat).into(),
+            cost_incl_vat: cost
+                .map(|c| {
+                    c.incl_vat
+                        .map(|i| i.to_string())
+                        .unwrap_or_else(|| "<unknown>".into())
+                })
+                .into(),
         });
     }
 
@@ -370,20 +411,31 @@ pub struct PeriodComponent<V: Display> {
     time: DateTime<Tz>,
     #[tabled(rename = "Price")]
     price: OptionDisplay<Money>,
-    #[tabled(rename = "VAT")]
-    vat: OptionDisplay<Vat>,
+    #[tabled(rename = "VAT", display_with = "format_vat")]
+    vat: Option<CompatibilityVat>,
     #[tabled(rename = "Volume")]
     volume: OptionDisplay<V>,
     #[tabled(rename = "Billed volume")]
     billed_volume: OptionDisplay<V>,
     #[tabled(rename = "Cost excl. VAT")]
-    cost_excl_vat: Money,
+    cost_excl_vat: OptionDisplay<Money>,
     #[tabled(rename = "Cost incl. VAT")]
-    cost_incl_vat: Money,
+    cost_incl_vat: OptionDisplay<String>,
 }
 
 fn format_time(time: &DateTime<Tz>) -> String {
     time.format("%y-%m-%d %H:%M:%S").to_string()
+}
+
+fn format_vat(vat: &Option<CompatibilityVat>) -> String {
+    if let Some(vat) = *vat {
+        match vat {
+            CompatibilityVat::Vat(vat) => OptionDisplay(vat).to_string(),
+            CompatibilityVat::Unknown => "<unknown>".into(),
+        }
+    } else {
+        String::new()
+    }
 }
 
 pub struct OptionDisplay<T>(Option<T>);

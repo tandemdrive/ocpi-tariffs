@@ -1,12 +1,15 @@
 //! The Tariff object describes a tariff and its properties
 
 use serde::{Deserialize, Serialize};
+use v221::tariff::CompatibilityVat;
 
 use crate::types::{
     electricity::{Kw, Kwh},
     money::Money,
     time::{DateTime, DayOfWeek, OcpiDate, OcpiTime, SecondsRound},
 };
+
+use crate::ocpi::v221;
 
 /// The Tariff object describes a tariff and its properties
 #[derive(Clone, Deserialize, Serialize)]
@@ -102,4 +105,77 @@ pub struct OcpiTariffRestriction {
     /// Which day(s) of the week this tariff is valid
     #[serde(default)]
     pub day_of_week: Vec<DayOfWeek>,
+}
+
+impl From<OcpiTariff> for v221::tariff::OcpiTariff {
+    fn from(tariff: OcpiTariff) -> Self {
+        Self {
+            currency: tariff.currency,
+            min_price: None,
+            max_price: None,
+            elements: tariff
+                .elements
+                .into_iter()
+                .map(OcpiTariffElement::into)
+                .collect(),
+            start_date_time: tariff.start_date_time,
+            end_date_time: tariff.end_date_time,
+        }
+    }
+}
+
+impl From<OcpiTariffRestriction> for v221::tariff::OcpiTariffRestriction {
+    fn from(restriction: OcpiTariffRestriction) -> Self {
+        Self {
+            start_date: restriction.start_date,
+            end_date: restriction.end_date,
+            start_time: restriction.start_time,
+            end_time: restriction.end_time,
+            max_power: restriction.max_power,
+            min_power: restriction.min_power,
+            min_duration: restriction.min_duration,
+            max_duration: restriction.max_duration,
+            min_kwh: restriction.min_kwh,
+            max_kwh: restriction.max_kwh,
+            day_of_week: restriction.day_of_week,
+            max_current: None,
+            min_current: None,
+            reservation: None,
+        }
+    }
+}
+
+impl From<TariffDimensionType> for v221::tariff::TariffDimensionType {
+    fn from(ty: TariffDimensionType) -> Self {
+        match ty {
+            TariffDimensionType::Flat => Self::Flat,
+            TariffDimensionType::Time => Self::Time,
+            TariffDimensionType::Energy => Self::Energy,
+            TariffDimensionType::ParkingTime => Self::ParkingTime,
+        }
+    }
+}
+
+impl From<OcpiTariffElement> for v221::tariff::OcpiTariffElement {
+    fn from(element: OcpiTariffElement) -> Self {
+        Self {
+            restrictions: element.restrictions.map(OcpiTariffRestriction::into),
+            price_components: element
+                .price_components
+                .into_iter()
+                .map(OcpiPriceComponent::into)
+                .collect(),
+        }
+    }
+}
+
+impl From<OcpiPriceComponent> for v221::tariff::OcpiPriceComponent {
+    fn from(component: OcpiPriceComponent) -> Self {
+        Self {
+            component_type: TariffDimensionType::into(component.component_type),
+            price: component.price,
+            step_size: component.step_size,
+            vat: CompatibilityVat::Unknown,
+        }
+    }
 }

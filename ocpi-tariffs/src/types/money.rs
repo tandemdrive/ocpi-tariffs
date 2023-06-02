@@ -13,15 +13,20 @@ use super::{electricity::Kwh, number::Number, time::HoursDecimal};
 pub struct Price {
     /// The price excluding VAT.
     pub excl_vat: Money,
+    #[serde(default)]
     /// The price including VAT.
-    pub incl_vat: Money,
+    ///
+    /// If no vat is applicable this value will be equal to the excl_vat.
+    ///
+    /// If no vat could be determined (tariff is 2.1.1) this value will be `None`.
+    pub incl_vat: Option<Money>,
 }
 
 impl Price {
     pub(crate) fn zero() -> Self {
         Self {
             excl_vat: Money::zero(),
-            incl_vat: Money::zero(),
+            incl_vat: Some(Money::zero()),
         }
     }
 
@@ -29,7 +34,7 @@ impl Price {
     pub fn with_scale(self) -> Self {
         Self {
             excl_vat: self.excl_vat.with_scale(),
-            incl_vat: self.incl_vat.with_scale(),
+            incl_vat: self.incl_vat.map(Money::with_scale),
         }
     }
 }
@@ -40,7 +45,10 @@ impl Add for Price {
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             excl_vat: self.excl_vat + rhs.excl_vat,
-            incl_vat: self.incl_vat + rhs.incl_vat,
+            incl_vat: match (self.incl_vat, rhs.incl_vat) {
+                (Some(lhs_incl_vat), Some(rhs_incl_vat)) => Some(lhs_incl_vat + rhs_incl_vat),
+                _ => None,
+            },
         }
     }
 }
@@ -48,7 +56,11 @@ impl Add for Price {
 impl AddAssign for Price {
     fn add_assign(&mut self, rhs: Self) {
         self.excl_vat = self.excl_vat + rhs.excl_vat;
-        self.incl_vat = self.incl_vat + rhs.incl_vat;
+
+        self.incl_vat = match (self.incl_vat, rhs.incl_vat) {
+            (Some(lhs_incl_vat), Some(rhs_incl_vat)) => Some(lhs_incl_vat + rhs_incl_vat),
+            _ => None,
+        };
     }
 }
 

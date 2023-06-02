@@ -1,10 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use crate::ocpi::tariff::OcpiTariff;
+use super::tariff::OcpiTariff;
+
+use crate::ocpi::v221;
 
 use crate::types::money::Money;
 use crate::types::{
     electricity::{Ampere, Kwh},
+    money::Price,
     time::{DateTime, HoursDecimal},
 };
 
@@ -70,4 +73,65 @@ pub struct OcpiChargingPeriod {
 
     /// List of relevant values for this charging period
     pub dimensions: Vec<OcpiCdrDimension>,
+}
+
+impl From<OcpiChargingPeriod> for v221::cdr::OcpiChargingPeriod {
+    fn from(period: OcpiChargingPeriod) -> Self {
+        Self {
+            start_date_time: period.start_date_time,
+            dimensions: period
+                .dimensions
+                .into_iter()
+                .filter_map(OcpiCdrDimension::into)
+                .collect(),
+        }
+    }
+}
+
+impl From<Cdr> for v221::cdr::Cdr {
+    fn from(cdr: Cdr) -> Self {
+        Self {
+            currency: cdr.currency,
+            end_date_time: cdr.stop_date_time,
+            start_date_time: cdr.start_date_time,
+            last_updated: cdr.last_updated,
+            charging_periods: cdr
+                .charging_periods
+                .into_iter()
+                .map(OcpiChargingPeriod::into)
+                .collect(),
+            tariffs: cdr.tariffs.into_iter().map(OcpiTariff::into).collect(),
+            total_cost: Price {
+                excl_vat: cdr.total_cost,
+                incl_vat: None,
+            },
+            total_energy: cdr.total_energy,
+            total_energy_cost: None,
+            total_time: cdr.total_time,
+            total_time_cost: None,
+            total_fixed_cost: None,
+            total_parking_time: cdr.total_parking_time,
+            total_parking_cost: None,
+            total_reservation_cost: None,
+        }
+    }
+}
+
+impl From<OcpiCdrDimension> for Option<v221::cdr::OcpiCdrDimension> {
+    fn from(dimension: OcpiCdrDimension) -> Self {
+        use v221::cdr::OcpiCdrDimension as OcpiCdrDimension221;
+
+        let result = match dimension {
+            OcpiCdrDimension::Time(time) => OcpiCdrDimension221::Time(time),
+            OcpiCdrDimension::Energy(energy) => OcpiCdrDimension221::Energy(energy),
+            OcpiCdrDimension::MaxCurrent(current) => OcpiCdrDimension221::MaxCurrent(current),
+            OcpiCdrDimension::MinCurrent(current) => OcpiCdrDimension221::MinCurrent(current),
+            OcpiCdrDimension::ParkingTime(parking) => OcpiCdrDimension221::ParkingTime(parking),
+            // We can safely ignore the flat dimension since this can be determined from the tariff and
+            // period time-stamps.
+            OcpiCdrDimension::Flat => return None,
+        };
+
+        Some(result)
+    }
 }
