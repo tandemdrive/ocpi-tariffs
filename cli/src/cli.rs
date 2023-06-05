@@ -95,7 +95,7 @@ pub struct TariffArgs {
     #[arg(short = 'z', long, default_value = "Europe/Amsterdam")]
     timezone: Tz,
     /// The OCPI version that should be used for the input structures.
-    /// 
+    ///
     /// If the input consists of version 2.1.1 structures they will be converted to 2.2.1
     /// structures. The actual calculation and output will always be according to OCPI 2.2.1.
     ///
