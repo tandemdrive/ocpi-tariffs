@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+Added library support for OCPI 2.1.1 that can be enabled with feature flag `ocpi-v211`.
+
+Added cli support for OCPI 2.1.1 that can be used by specifying `--ocpi-version v211` or `--ocpi-version detect`.
+
 ## 0.3.2 2023-05-30
 
 Fixed a bug in step-size calculation for energy dimension.
