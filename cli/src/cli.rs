@@ -181,9 +181,9 @@ where
 
 #[derive(Clone, Copy, Default, ValueEnum)]
 pub enum OcpiVersion {
-    #[default]
     V221,
     V211,
+    #[default]
     Detect,
 }
 
