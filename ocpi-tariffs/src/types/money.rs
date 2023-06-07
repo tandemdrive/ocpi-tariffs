@@ -130,10 +130,9 @@ impl Mul<HoursDecimal> for Money {
     type Output = Money;
 
     fn mul(self, rhs: HoursDecimal) -> Self::Output {
-        let duration =
-            self.0 * (Number::from(rhs.0.num_milliseconds()) / Number::from(dec!(3_600_000)));
+        let cost = self.0 * rhs.as_num_hours_decimal();
 
-        Self(duration)
+        Self(cost)
     }
 }
 
