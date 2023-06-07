@@ -2,7 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 0.3.3 2023-06-07
+
+Changed serialization of all structures to use OCPI rounding.
 
 Added library support for OCPI 2.1.1 that can be enabled with feature flag `ocpi-v211`.
 
