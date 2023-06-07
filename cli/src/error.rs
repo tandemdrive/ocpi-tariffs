@@ -9,7 +9,7 @@ pub enum Error {
     Deserialize {
         path: String,
         kind: &'static str,
-        error: serde_json::Error,
+        error: std::io::Error,
     },
     Internal(ocpi_tariffs::Error),
 }
@@ -39,12 +39,12 @@ impl Error {
     pub fn deserialize(
         path: impl fmt::Display,
         kind: &'static str,
-        error: serde_json::Error,
+        error: impl Into<std::io::Error>,
     ) -> Self {
         Self::Deserialize {
             path: path.to_string(),
             kind,
-            error,
+            error: error.into(),
         }
     }
 }

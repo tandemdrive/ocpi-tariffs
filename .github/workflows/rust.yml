@@ -16,14 +16,14 @@ jobs:
     timeout-minutes: 45
     steps:
     - uses: actions/checkout@v3
-    - run: cargo build --workspace --verbose
+    - run: cargo build --workspace --all-features --verbose
 
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
     - uses: actions/checkout@v3
-    - run: cargo test --workspace --verbose
+    - run: cargo test --workspace --all-features --verbose
 
   clippy:
     runs-on: ubuntu-latest

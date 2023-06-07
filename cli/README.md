@@ -3,8 +3,8 @@
 
 This crate provides a binary for doing calculations with [OCPI](https://evroaming.org/ocpi-background/)
 [tariffs](https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module).
-Specifically for the [`OCPI 2.2.1`](https://evroaming.org/app/uploads/2021/11/OCPI-2.2.1.pdf)
-version.
+Specifically for the [`OCPI 2.2.1`](https://evroaming.org/app/uploads/2021/11/OCPI-2.2.1.pdf) 
+and [`OCPI 2.1.1`](https://github.com/ocpi/ocpi/releases/download/2.1.1-d2/OCPI_2.1.1-d2.pdf) version.
 
 ## Installation
 
@@ -48,6 +48,18 @@ Options:
           inside the provided CDR. If the CDR contains multiple tariff
           structures, the first valid tariff will be used.
 
+  -o, --ocpi-version <OCPI_VERSION>
+          The OCPI version that should be used for the input structures.
+
+          If the input consists of version 2.1.1 structures they will be converted to 2.2.1 structures. 
+          The actual calculation and output will always be according to OCPI 2.2.1.
+
+          use `detect` to let to tool try to find the matching version.
+
+          [default: v221]
+          [possible values: v221, v211, detect]  
+
+
   -z, --timezone <TIMEZONE>
           Timezone for evaluating any local times contained in the tariff
           structure
@@ -90,6 +102,17 @@ Options:
           structure
 
           [default: Europe/Amsterdam]
+
+  -o, --ocpi-version <OCPI_VERSION>
+          The OCPI version that should be used for the input structures.
+
+          If the input consists of version 2.1.1 structures they will be converted to 2.2.1 structures. 
+          The actual calculation and output will always be according to OCPI 2.2.1.
+
+          use `detect` to let to tool try to find the matching version.
+
+          [default: v221]
+          [possible values: v221, v211, detect]  
 
   -h, --help
           Print help (see a summary with '-h')

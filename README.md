@@ -17,7 +17,7 @@
 This project provides software for doing calculations with [OCPI](https://evroaming.org/ocpi-background/)
 [tariffs](https://github.com/ocpi/ocpi/blob/2.2.1/mod_tariffs.asciidoc#1-tariffs-module).
 Specifically for the [`OCPI 2.2.1`](https://evroaming.org/app/uploads/2021/11/OCPI-2.2.1.pdf)
-version.
+and [`OCPI 2.1.1`](https://github.com/ocpi/ocpi/releases/download/2.1.1-d2/OCPI_2.1.1-d2.pdf) version.
 
 You can test the tariff tool [online](https://tools.tandemdrive.com/).
 
@@ -65,11 +65,6 @@ foundation](https://evroaming.org/).
 
 - Produce human consumable receipts which specify the different cost components
   that led to the calculated total price.
-
-- Support OCPI version 2.1.1
-
-  The tariff structure of version 2.1.1 is (mostly?) a subset of the structure
-  of 2.2.1 so in practice we expect this project to also be usable on 2.1.1.
 
 ## Tariff structure overview
 

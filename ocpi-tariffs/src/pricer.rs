@@ -1,7 +1,10 @@
 use std::ops::Mul;
 
 use crate::{
-    ocpi::{cdr::Cdr, tariff::OcpiTariff},
+    ocpi::{
+        cdr::Cdr,
+        tariff::{CompatibilityVat, OcpiTariff},
+    },
     session::ChargeSession,
     session::{ChargePeriod, PeriodData},
     tariff::{PriceComponent, PriceComponents, Tariffs},
@@ -102,18 +105,33 @@ impl Pricer {
         let billed_energy = step_size.apply_energy(&mut periods, total_energy);
         let billed_parking_time = step_size.apply_parking_time(&mut periods, total_parking_time);
 
-        let mut total_energy_cost = Price::zero();
-        let mut total_time_cost = Price::zero();
-        let mut total_parking_cost = Price::zero();
-        let mut total_fixed_cost = Price::zero();
+        let mut total_energy_cost = None;
+        let mut total_time_cost = None;
+        let mut total_parking_cost = None;
+        let mut total_fixed_cost = None;
 
         for period in &periods {
             let dimensions = &period.dimensions;
 
-            total_energy_cost += dimensions.energy.cost();
-            total_time_cost += dimensions.time.cost();
-            total_parking_cost += dimensions.parking_time.cost();
-            total_fixed_cost += dimensions.flat.cost();
+            total_energy_cost = match (total_energy_cost, dimensions.energy.cost()) {
+                (None, None) => None,
+                (total, period) => Some(total.unwrap_or_default() + period.unwrap_or_default()),
+            };
+
+            total_time_cost = match (total_time_cost, dimensions.time.cost()) {
+                (None, None) => None,
+                (total, period) => Some(total.unwrap_or_default() + period.unwrap_or_default()),
+            };
+
+            total_parking_cost = match (total_parking_cost, dimensions.parking_time.cost()) {
+                (None, None) => None,
+                (total, period) => Some(total.unwrap_or_default() + period.unwrap_or_default()),
+            };
+
+            total_fixed_cost = match (total_fixed_cost, dimensions.flat.cost()) {
+                (None, None) => None,
+                (total, period) => Some(total.unwrap_or_default() + period.unwrap_or_default()),
+            };
         }
 
         let total_time = if let Some(first) = periods.first() {
@@ -123,8 +141,17 @@ impl Pricer {
             HoursDecimal::zero()
         };
 
-        let total_cost =
-            total_time_cost + total_parking_cost + total_fixed_cost + total_energy_cost;
+        let total_cost = [
+            total_time_cost,
+            total_parking_cost,
+            total_fixed_cost,
+            total_energy_cost,
+        ]
+        .into_iter()
+        .fold(None, |accum, next| match (accum, next) {
+            (None, None) => None,
+            _ => Some(accum.unwrap_or_default() + next.unwrap_or_default()),
+        });
 
         let report = Report {
             periods,
@@ -141,7 +168,7 @@ impl Pricer {
             billed_parking_time,
             billed_energy,
             billed_charging_time,
-            total_reservation_cost: Price::zero(),
+            total_reservation_cost: None,
         };
 
         Ok(report)
@@ -165,20 +192,20 @@ impl StepSize {
 
     fn update(&mut self, index: usize, components: &PriceComponents, period: &ChargePeriod) {
         if period.period_data.energy.is_some() {
-            if let Some(energy) = &components.energy {
-                self.energy = Some((index, energy.clone()));
+            if let Some(energy) = components.energy {
+                self.energy = Some((index, energy));
             }
         }
 
         if period.period_data.duration.is_some() {
-            if let Some(time) = &components.time {
-                self.time = Some((index, time.clone()));
+            if let Some(time) = components.time {
+                self.time = Some((index, time));
             }
         }
 
         if period.period_data.parking_duration.is_some() {
-            if let Some(parking) = &components.parking {
-                self.parking_time = Some((index, parking.clone()));
+            if let Some(parking) = components.parking {
+                self.parking_time = Some((index, parking));
             }
         }
     }
@@ -270,9 +297,9 @@ pub struct Report {
     /// Index of the tariff that was found to be active.
     pub tariff_index: usize,
     /// Total sum of all the costs of this transaction in the specified currency.
-    pub total_cost: Price,
+    pub total_cost: Option<Price>,
     /// Total sum of all the cost related to duration of charging during this transaction, in the specified currency.
-    pub total_time_cost: Price,
+    pub total_time_cost: Option<Price>,
     /// Total duration of the charging session (including the duration of charging and not charging), in hours.
     pub total_time: HoursDecimal,
     /// Total duration of the charging session (excluding not charging), in hours.
@@ -280,21 +307,21 @@ pub struct Report {
     /// The total charging time after applying step-size.
     pub billed_charging_time: HoursDecimal,
     /// Total sum of all the cost related to parking of this transaction, including fixed price components, in the specified currency.
-    pub total_parking_cost: Price,
+    pub total_parking_cost: Option<Price>,
     /// Total duration of the charging session where the EV was not charging (no energy was transferred between EVSE and EV), in hours.
     pub total_parking_time: HoursDecimal,
     /// The total parking time after applying step-size
     pub billed_parking_time: HoursDecimal,
     /// Total sum of all the cost of all the energy used, in the specified currency.
-    pub total_energy_cost: Price,
+    pub total_energy_cost: Option<Price>,
     /// Total energy charged, in kWh.
     pub total_energy: Kwh,
     /// The total energy after applying step-size.
     pub billed_energy: Kwh,
     /// Total sum of all the fixed costs in the specified currency, except fixed price components of parking and reservation. The cost not depending on amount of time/energy used etc. Can contain costs like a start tariff.
-    pub total_fixed_cost: Price,
+    pub total_fixed_cost: Option<Price>,
     /// Total sum of all the cost related to a reservation of a Charge Point, including fixed price components, in the specified currency.
-    pub total_reservation_cost: Price,
+    pub total_reservation_cost: Option<Price>,
 }
 
 /// A report for a single period that occurred during a session.
@@ -318,11 +345,21 @@ impl PeriodReport {
     }
 
     /// The total cost of all dimensions in this period.
-    pub fn cost(&self) -> Price {
-        self.dimensions.time.cost()
-            + self.dimensions.parking_time.cost()
-            + self.dimensions.flat.cost()
-            + self.dimensions.energy.cost()
+    pub fn cost(&self) -> Option<Price> {
+        [
+            self.dimensions.time.cost(),
+            self.dimensions.parking_time.cost(),
+            self.dimensions.flat.cost(),
+            self.dimensions.energy.cost(),
+        ]
+        .into_iter()
+        .fold(None, |accum, next| {
+            if accum.is_none() && next.is_none() {
+                None
+            } else {
+                Some(accum.unwrap_or_default() + next.unwrap_or_default())
+            }
+        })
     }
 }
 
@@ -392,33 +429,19 @@ where
     V: Mul<Money, Output = Money> + Copy,
 {
     /// The total cost of this dimension during a period.
-    pub fn cost(&self) -> Price {
-        Price {
-            incl_vat: self.cost_incl_vat(),
-            excl_vat: self.cost_excl_vat(),
-        }
-    }
+    pub fn cost(&self) -> Option<Price> {
+        if let (Some(volume), Some(price)) = (self.billed_volume, self.price) {
+            let excl_vat = volume * price.price;
 
-    /// The cost excluding VAT of this dimension during a period.
-    pub fn cost_excl_vat(&self) -> Money {
-        if let Some(volume) = self.billed_volume {
-            let price = self
-                .price
-                .as_ref()
-                .map(|c| c.price)
-                .unwrap_or_else(Money::zero);
-            volume * price
-        } else {
-            Money::zero()
-        }
-    }
+            let incl_vat = match price.vat {
+                CompatibilityVat::Vat(Some(vat)) => Some(excl_vat * vat),
+                CompatibilityVat::Vat(None) => Some(excl_vat),
+                CompatibilityVat::Unknown => None,
+            };
 
-    /// The cost including VAT of this dimension during a period.
-    pub fn cost_incl_vat(&self) -> Money {
-        if let Some(vat) = self.price.as_ref().and_then(|c| c.vat) {
-            self.cost_excl_vat() * vat
+            Some(Price { excl_vat, incl_vat })
         } else {
-            self.cost_excl_vat()
+            None
         }
     }
 }
