@@ -180,6 +180,40 @@ impl From<OcpiTime> for chrono::NaiveTime {
     }
 }
 
+/// Days of the week.
+#[derive(Copy, PartialEq, Eq, Clone, Hash, Deserialize, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum DayOfWeek {
+    /// Monday
+    Monday,
+    /// Tuesday
+    Tuesday,
+    /// Wednesday
+    Wednesday,
+    /// Thursday
+    Thursday,
+    /// Friday
+    Friday,
+    /// Saturday
+    Saturday,
+    /// Sunday
+    Sunday,
+}
+
+impl From<DayOfWeek> for chrono::Weekday {
+    fn from(day: DayOfWeek) -> Self {
+        match day {
+            DayOfWeek::Monday => Self::Mon,
+            DayOfWeek::Tuesday => Self::Tue,
+            DayOfWeek::Wednesday => Self::Wed,
+            DayOfWeek::Thursday => Self::Thu,
+            DayOfWeek::Friday => Self::Fri,
+            DayOfWeek::Saturday => Self::Sat,
+            DayOfWeek::Sunday => Self::Sun,
+        }
+    }
+}
+
 #[cfg(test)]
 mod hour_decimal_tests {
     use chrono::Duration;

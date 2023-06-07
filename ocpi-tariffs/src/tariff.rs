@@ -1,10 +1,11 @@
 use serde::Serialize;
 
-use crate::ocpi::tariff::{OcpiPriceComponent, OcpiTariff, OcpiTariffElement, TariffDimensionType};
+use crate::ocpi::tariff::{
+    CompatibilityVat, OcpiPriceComponent, OcpiTariff, OcpiTariffElement, TariffDimensionType,
+};
 
 use crate::restriction::{collect_restrictions, Restriction};
 use crate::session::ChargePeriod;
-use crate::types::money::Vat;
 use crate::types::{money::Money, time::DateTime};
 
 pub struct Tariffs(Vec<Tariff>);
@@ -53,19 +54,19 @@ impl Tariff {
             }
 
             if components.time.is_none() {
-                components.time = tariff_element.components.time.clone();
+                components.time = tariff_element.components.time;
             }
 
             if components.parking.is_none() {
-                components.parking = tariff_element.components.parking.clone();
+                components.parking = tariff_element.components.parking;
             }
 
             if components.energy.is_none() {
-                components.energy = tariff_element.components.energy.clone();
+                components.energy = tariff_element.components.energy;
             }
 
             if components.flat.is_none() {
-                components.flat = tariff_element.components.flat.clone();
+                components.flat = tariff_element.components.flat;
             }
 
             if components.has_all_components() {
@@ -173,11 +174,11 @@ impl PriceComponents {
     }
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Copy, Serialize)]
 pub struct PriceComponent {
     pub tariff_element_index: usize,
     pub price: Money,
-    pub vat: Option<Vat>,
+    pub vat: CompatibilityVat,
     pub step_size: u64,
 }
 

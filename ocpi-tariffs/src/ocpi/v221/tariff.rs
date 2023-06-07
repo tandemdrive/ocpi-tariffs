@@ -1,20 +1,16 @@
 //! The Tariff object describes a tariff and its properties
 
-use chrono::Weekday;
 use serde::{Deserialize, Serialize};
 
 use crate::types::{
     electricity::{Ampere, Kw, Kwh},
     money::{Money, Price, Vat},
-    time::{DateTime, OcpiDate, OcpiTime, SecondsRound},
+    time::{DateTime, DayOfWeek, OcpiDate, OcpiTime, SecondsRound},
 };
 
 /// The Tariff object describes a tariff and its properties
 #[derive(Clone, Deserialize, Serialize)]
 pub struct OcpiTariff {
-    /// Code designating in which country this country is active.
-    pub country_code: String,
-
     /// Currency of this tariff, ISO 4217 Code
     pub currency: String,
 
@@ -34,40 +30,6 @@ pub struct OcpiTariff {
     pub end_date_time: Option<DateTime>,
 }
 
-/// Days of the week.
-#[derive(Copy, PartialEq, Eq, Clone, Hash, Deserialize, Serialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum DayOfWeek {
-    /// Monday
-    Monday,
-    /// Tuesday
-    Tuesday,
-    /// Wednesday
-    Wednesday,
-    /// Thursday
-    Thursday,
-    /// Friday
-    Friday,
-    /// Saturday
-    Saturday,
-    /// Sunday
-    Sunday,
-}
-
-impl From<DayOfWeek> for Weekday {
-    fn from(day: DayOfWeek) -> Self {
-        match day {
-            DayOfWeek::Monday => Self::Mon,
-            DayOfWeek::Tuesday => Self::Tue,
-            DayOfWeek::Wednesday => Self::Wed,
-            DayOfWeek::Thursday => Self::Thu,
-            DayOfWeek::Friday => Self::Fri,
-            DayOfWeek::Saturday => Self::Sat,
-            DayOfWeek::Sunday => Self::Sun,
-        }
-    }
-}
-
 /// Component of a tariff price.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct OcpiPriceComponent {
@@ -79,13 +41,48 @@ pub struct OcpiPriceComponent {
     pub price: Money,
 
     /// Optionally specify a VAT percentage for this component.
-    pub vat: Option<Vat>,
+    pub vat: CompatibilityVat,
 
     /// Minimum amount to be billed. This unit will be billed in this step_size
     /// blocks. For example: if type is time and step_size is 300, then time will
     /// be billed in blocks of 5 minutes, so if 6 minutes is used, 10 minutes (2
     /// blocks of step_size) will be billed
     pub step_size: u64,
+}
+
+/// A VAT percentage that's convertible from 2.1.1.
+#[derive(Clone, Copy)]
+pub enum CompatibilityVat {
+    /// No VAT percentage is known, this means any `incl_vat` fields should be `None` in the final
+    /// calculation.
+    Unknown,
+    /// If this variant is `None` it means no VAT is applicable, the total `incl_vat` should be
+    /// equal to `excl_vat`.
+    ///
+    /// If this variant is `Some(vat)` that's the percentage that should be used.
+    Vat(Option<Vat>),
+}
+
+impl Serialize for CompatibilityVat {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::Unknown => &None,
+            Self::Vat(vat) => vat,
+        }
+        .serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for CompatibilityVat {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(Self::Vat(<Option<Vat>>::deserialize(deserializer)?))
+    }
 }
 
 /// Describes part of a tariff

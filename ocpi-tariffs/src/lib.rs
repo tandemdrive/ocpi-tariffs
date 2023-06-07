@@ -8,6 +8,7 @@ use std::fmt;
 
 /// OCPI specific structures for defining tariffs and charge sessions.
 pub mod ocpi;
+
 /// Module containing the functionality to price charge sessions with provided tariffs.
 pub mod pricer;
 

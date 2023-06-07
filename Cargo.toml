@@ -12,3 +12,4 @@ members = ["cli", "ocpi-tariffs"]
 [workspace.dependencies]
 chrono-tz = { version = "0.8.2", default-features = false }
 serde_json = { version = "1.0", default-features = false }
+serde = { version = "1.0", features = ["derive"] }

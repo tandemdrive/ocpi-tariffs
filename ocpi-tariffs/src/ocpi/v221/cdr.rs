@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::ocpi::tariff::OcpiTariff;
+use super::tariff::OcpiTariff;
 
 use crate::types::{
     electricity::{Ampere, Kw, Kwh},

@@ -73,7 +73,11 @@ pub fn validate_cdr(cdr: Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::Er
     let pricer = Pricer::with_tariffs(&cdr, &[tariff], Tz::UTC);
     let report = pricer.build_report()?;
 
-    assert_eq!(cdr.total_cost, report.total_cost.with_scale(), "total_cost");
+    assert_eq!(
+        cdr.total_cost,
+        report.total_cost.unwrap_or_default().with_scale(),
+        "total_cost"
+    );
 
     assert_eq!(
         cdr.total_energy,
@@ -82,7 +86,7 @@ pub fn validate_cdr(cdr: Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::Er
     );
     assert_eq!(
         cdr.total_energy_cost.unwrap_or_default(),
-        report.total_energy_cost.with_scale(),
+        report.total_energy_cost.unwrap_or_default().with_scale(),
         "total_energy_cost"
     );
 
@@ -90,7 +94,7 @@ pub fn validate_cdr(cdr: Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::Er
 
     assert_eq!(
         cdr.total_time_cost.unwrap_or_default(),
-        report.total_time_cost.with_scale(),
+        report.total_time_cost.unwrap_or_default().with_scale(),
         "total_time_cost"
     );
 
@@ -102,19 +106,22 @@ pub fn validate_cdr(cdr: Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::Er
 
     assert_eq!(
         cdr.total_parking_cost.unwrap_or_default(),
-        report.total_parking_cost.with_scale(),
+        report.total_parking_cost.unwrap_or_default().with_scale(),
         "total_parking_cost"
     );
 
     assert_eq!(
         cdr.total_reservation_cost.unwrap_or_default(),
-        report.total_reservation_cost.with_scale(),
+        report
+            .total_reservation_cost
+            .unwrap_or_default()
+            .with_scale(),
         "total_reservation_cost"
     );
 
     assert_eq!(
         cdr.total_fixed_cost.unwrap_or_default(),
-        report.total_fixed_cost.with_scale(),
+        report.total_fixed_cost.unwrap_or_default().with_scale(),
         "total_fixed_cost"
     );
 
