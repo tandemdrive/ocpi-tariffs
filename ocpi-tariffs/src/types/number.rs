@@ -5,7 +5,7 @@ use std::{
 
 use serde::{Deserialize, Deserializer, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub(crate) struct Number(rust_decimal::Decimal);
 
 impl Number {
@@ -27,6 +27,20 @@ impl<'de> Deserialize<'de> for Number {
         let mut decimal = <rust_decimal::Decimal as Deserialize>::deserialize(deserializer)?;
         decimal.rescale(4);
         Ok(Self(decimal))
+    }
+}
+
+impl Serialize for Number {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut decimal = self.0;
+
+        decimal.rescale(4);
+        decimal.normalize_assign();
+
+        Serialize::serialize(&decimal, serializer)
     }
 }
 
