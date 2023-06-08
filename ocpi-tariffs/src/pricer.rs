@@ -5,8 +5,7 @@ use crate::{
         cdr::Cdr,
         tariff::{CompatibilityVat, OcpiTariff},
     },
-    session::ChargeSession,
-    session::{ChargePeriod, PeriodData},
+    session::{ChargePeriod, ChargeSession, PeriodData},
     tariff::{PriceComponent, PriceComponents, Tariffs},
     types::{
         electricity::Kwh,
@@ -17,7 +16,7 @@ use crate::{
     Error, Result,
 };
 
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use chrono_tz::Tz;
 use serde::Serialize;
 
@@ -82,21 +81,14 @@ impl Pricer {
 
             let dimensions = Dimensions::new(components, &period.period_data);
 
-            total_charging_time.0 = total_charging_time.0
-                + dimensions
-                    .time
-                    .volume
-                    .map(|hms| hms.0)
-                    .unwrap_or_else(Duration::zero);
+            total_charging_time += dimensions.time.volume.unwrap_or_else(HoursDecimal::zero);
 
             total_energy += dimensions.energy.volume.unwrap_or_else(Kwh::zero);
 
-            total_parking_time.0 = total_parking_time.0
-                + dimensions
-                    .parking_time
-                    .volume
-                    .map(|hms| hms.0)
-                    .unwrap_or_else(Duration::zero);
+            total_parking_time += dimensions
+                .parking_time
+                .volume
+                .unwrap_or_else(HoursDecimal::zero);
 
             periods.push(PeriodReport::new(period, dimensions));
         }
@@ -215,18 +207,16 @@ impl StepSize {
         billed_volume: &mut HoursDecimal,
         step_size: u64,
     ) -> HoursDecimal {
-        let total_seconds = Number::from(total.0.num_seconds());
+        let total_seconds = total.as_num_seconds_decimal();
         let step_size = Number::from(step_size);
 
-        let priced_total_seconds = ((total_seconds / step_size).ceil() * step_size)
-            .try_into()
-            .expect("overflow");
+        let priced_total_seconds = (total_seconds / step_size).ceil() * step_size;
+        let priced_total =
+            HoursDecimal::from_seconds_decimal(priced_total_seconds).expect("overflow");
 
-        let priced_total = Duration::seconds(priced_total_seconds);
-        let difference = priced_total - total.0;
-        billed_volume.0 = billed_volume.0 + difference;
+        *billed_volume += priced_total - total;
 
-        priced_total.into()
+        priced_total
     }
 
     fn apply_time(&self, periods: &mut [PeriodReport], total: HoursDecimal) -> HoursDecimal {

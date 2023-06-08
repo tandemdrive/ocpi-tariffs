@@ -1,17 +1,23 @@
-use std::fmt::Display;
+use std::{
+    fmt::Display,
+    ops::{Add, AddAssign, Sub, SubAssign},
+};
 
 use chrono::Duration;
-use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize, Serializer};
 
 use super::number::Number;
+
+const SECS_IN_MIN: i64 = 60;
+const MINS_IN_HOUR: i64 = 60;
+const MILLIS_IN_SEC: i64 = 1000;
 
 /// A `chrono` UTC date time.
 pub type DateTime = chrono::DateTime<chrono::Utc>;
 
 /// A generic duration type that converts from and to a decimal amount of hours.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct HoursDecimal(pub(crate) Duration);
+pub struct HoursDecimal(Duration);
 
 impl<'de> Deserialize<'de> for HoursDecimal {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -21,22 +27,21 @@ impl<'de> Deserialize<'de> for HoursDecimal {
         use serde::de::Error;
 
         let hours = <Number as serde::Deserialize>::deserialize(deserializer)?;
-        let duration = Self::try_from(hours).map_err(|_e| D::Error::custom("overflow"))?;
+        let duration =
+            Self::from_hours_decimal(hours).map_err(|_e| D::Error::custom("overflow"))?;
         Ok(duration)
     }
 }
 
 impl Serialize for HoursDecimal {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&self.to_string())
+        let hours = self.as_num_hours_decimal();
+        hours.serialize(serializer)
     }
 }
 
 impl Display for HoursDecimal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        const SECS_IN_MIN: i64 = 60;
-        const MINS_IN_HOUR: i64 = 60;
-
         let duration = self.0;
         let seconds = duration.num_seconds() % SECS_IN_MIN;
         let minutes = (duration.num_seconds() / SECS_IN_MIN) % MINS_IN_HOUR;
@@ -58,36 +63,60 @@ impl From<Duration> for HoursDecimal {
     }
 }
 
-impl TryFrom<Number> for HoursDecimal {
-    type Error = rust_decimal::Error;
-
-    fn try_from(value: Number) -> Result<Self, Self::Error> {
-        let millis = value * Number::from(dec!(3_600_000));
-        let duration = Duration::milliseconds(millis.try_into()?);
-        Ok(Self(duration))
+impl AddAssign for HoursDecimal {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 = self.0 + rhs.0;
     }
 }
 
-impl From<&HoursDecimal> for Number {
-    fn from(value: &HoursDecimal) -> Self {
-        use rust_decimal::Decimal;
-
-        let seconds: Decimal = value.0.num_seconds().into();
-        let hours = seconds / dec!(3600);
-
-        hours.into()
+impl SubAssign for HoursDecimal {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0 = self.0 - rhs.0;
     }
 }
 
-impl From<HoursDecimal> for Number {
-    fn from(value: HoursDecimal) -> Self {
-        (&value).into()
+impl Add for HoursDecimal {
+    type Output = Self;
+
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self += rhs;
+
+        self
+    }
+}
+
+impl Sub for HoursDecimal {
+    type Output = Self;
+
+    fn sub(mut self, rhs: Self) -> Self::Output {
+        self -= rhs;
+
+        self
     }
 }
 
 impl HoursDecimal {
     pub(crate) fn zero() -> Self {
         Self(Duration::zero())
+    }
+
+    pub(crate) fn as_num_seconds_decimal(&self) -> Number {
+        Number::from(self.0.num_milliseconds()) / Number::from(MILLIS_IN_SEC)
+    }
+
+    pub(crate) fn as_num_hours_decimal(&self) -> Number {
+        Number::from(self.0.num_milliseconds())
+            / Number::from(MILLIS_IN_SEC * SECS_IN_MIN * MINS_IN_HOUR)
+    }
+
+    pub(crate) fn from_seconds_decimal(seconds: Number) -> Result<Self, rust_decimal::Error> {
+        let millis = seconds * Number::from(MILLIS_IN_SEC);
+        Ok(Self(Duration::milliseconds(millis.try_into()?)))
+    }
+
+    pub(crate) fn from_hours_decimal(hours: Number) -> Result<Self, rust_decimal::Error> {
+        let millis = hours * Number::from(MILLIS_IN_SEC * SECS_IN_MIN * MINS_IN_HOUR);
+        Ok(Self(Duration::milliseconds(millis.try_into()?)))
     }
 }
 
@@ -226,28 +255,28 @@ mod hour_decimal_tests {
     #[test]
     fn zero_minutes_should_be_zero_hours() {
         let hours: HoursDecimal = Duration::minutes(0).into();
-        let number: Number = hours.into();
+        let number: Number = hours.as_num_hours_decimal();
         assert_eq!(number, Number::from(dec!(0.0)));
     }
 
     #[test]
     fn thirty_minutes_should_be_fraction_of_hour() {
         let hours: HoursDecimal = Duration::minutes(30).into();
-        let number: Number = hours.into();
+        let number: Number = hours.as_num_hours_decimal();
         assert_eq!(number, Number::from(dec!(0.5)));
     }
 
     #[test]
     fn sixty_minutes_should_be_fraction_of_hour() {
         let hours: HoursDecimal = Duration::minutes(60).into();
-        let number: Number = hours.into();
+        let number: Number = hours.as_num_hours_decimal();
         assert_eq!(number, Number::from(dec!(1.0)));
     }
 
     #[test]
     fn ninety_minutes_should_be_fraction_of_hour() {
         let hours: HoursDecimal = Duration::minutes(90).into();
-        let number: Number = hours.into();
+        let number: Number = hours.as_num_hours_decimal();
         assert_eq!(number, Number::from(dec!(1.5)));
     }
 }
