@@ -1,5 +1,7 @@
 //! The Tariff object describes a tariff and its properties
 
+use crate::null_default;
+
 use serde::{Deserialize, Serialize};
 use v221::tariff::CompatibilityVat;
 
@@ -103,7 +105,7 @@ pub struct OcpiTariffRestriction {
     pub max_duration: Option<SecondsRound>,
 
     /// Which day(s) of the week this tariff is valid
-    #[serde(default)]
+    #[serde(deserialize_with = "null_default", default)]
     pub day_of_week: Vec<DayOfWeek>,
 }
 

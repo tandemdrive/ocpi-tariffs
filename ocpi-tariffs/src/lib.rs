@@ -6,6 +6,8 @@
 
 use std::fmt;
 
+use serde::{Deserialize, Deserializer};
+
 /// OCPI specific structures for defining tariffs and charge sessions.
 pub mod ocpi;
 
@@ -37,4 +39,13 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("No valid tariff has been found in the list of provided tariffs")
     }
+}
+
+fn null_default<'de, D, T>(deserializer: D) -> std::result::Result<T, D::Error>
+where
+    T: Default + Deserialize<'de>,
+    D: Deserializer<'de>,
+{
+    let opt = Option::deserialize(deserializer)?;
+    Ok(opt.unwrap_or_default())
 }
