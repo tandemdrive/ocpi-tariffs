@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use super::tariff::OcpiTariff;
 
+use crate::null_default;
+
 use crate::types::{
     electricity::{Ampere, Kw, Kwh},
     money::Price,
@@ -21,6 +23,7 @@ pub struct Cdr {
     pub currency: String,
 
     /// List of relevant tariff elements.
+    #[serde(deserialize_with = "null_default", default)]
     pub tariffs: Vec<OcpiTariff>,
 
     /// List of charging periods that make up this charging session> A session should consist of 1 or

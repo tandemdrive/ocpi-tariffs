@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::tariff::OcpiTariff;
 
-use crate::ocpi::v221;
+use crate::{null_default, ocpi::v221};
 
 use crate::types::money::Money;
 use crate::types::{
@@ -24,6 +24,7 @@ pub struct Cdr {
     pub currency: String,
 
     /// List of relevant tariff elements.
+    #[serde(deserialize_with = "null_default", default)]
     pub tariffs: Vec<OcpiTariff>,
 
     /// List of charging periods that make up this charging session> A session should consist of 1 or
@@ -53,7 +54,7 @@ pub enum OcpiCdrDimension {
     /// Consumed energy in `kWh`.
     Energy(Kwh),
     /// Flat fee, no unit.
-    Flat,
+    Flat(()),
     /// The peak current, in 'A', during this period.
     MaxCurrent(Ampere),
     /// The lowest current, in `A`, during this period.
@@ -129,7 +130,7 @@ impl From<OcpiCdrDimension> for Option<v221::cdr::OcpiCdrDimension> {
             OcpiCdrDimension::ParkingTime(parking) => OcpiCdrDimension221::ParkingTime(parking),
             // We can safely ignore the flat dimension since this can be determined from the tariff and
             // period time-stamps.
-            OcpiCdrDimension::Flat => return None,
+            OcpiCdrDimension::Flat(()) => return None,
         };
 
         Some(result)
