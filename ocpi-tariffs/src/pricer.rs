@@ -189,7 +189,7 @@ impl StepSize {
             }
         }
 
-        if period.period_data.duration.is_some() {
+        if period.period_data.charging_duration.is_some() {
             if let Some(time) = components.time {
                 self.time = Some((index, time));
             }
@@ -373,7 +373,7 @@ impl Dimensions {
                 components.parking,
                 data.parking_duration.map(Into::into),
             ),
-            time: DimensionReport::new(components.time, data.duration.map(Into::into)),
+            time: DimensionReport::new(components.time, data.charging_duration.map(Into::into)),
             energy: DimensionReport::new(components.energy, data.energy),
             flat: DimensionReport::new(components.flat, Some(())),
         }

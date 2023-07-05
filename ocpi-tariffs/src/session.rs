@@ -87,7 +87,7 @@ pub struct PeriodData {
     pub min_current: Option<Ampere>,
     pub max_power: Option<Kw>,
     pub min_power: Option<Kw>,
-    pub duration: Option<Duration>,
+    pub charging_duration: Option<Duration>,
     pub parking_duration: Option<Duration>,
     pub reservation_duration: Option<Duration>,
     pub energy: Option<Kwh>,
@@ -99,6 +99,7 @@ pub struct PeriodData {
 pub struct InstantData {
     local_timezone: Tz,
     pub date_time: DateTime,
+    pub total_charging_duration: Duration,
     pub total_duration: Duration,
     pub total_energy: Kwh,
 }
@@ -108,6 +109,7 @@ impl InstantData {
         Self {
             date_time,
             local_timezone,
+            total_charging_duration: Duration::zero(),
             total_duration: Duration::zero(),
             total_energy: Kwh::zero(),
         }
@@ -116,10 +118,11 @@ impl InstantData {
     fn next(&self, state: &PeriodData, date_time: DateTime) -> Self {
         let mut next = self.clone();
 
+        next.total_duration = date_time - next.date_time;
         next.date_time = date_time;
 
-        if let Some(duration) = state.duration {
-            next.total_duration = next.total_duration + duration;
+        if let Some(duration) = state.charging_duration {
+            next.total_charging_duration = next.total_charging_duration + duration;
         }
 
         if let Some(energy) = state.energy {
@@ -153,7 +156,7 @@ impl PeriodData {
             min_current: None,
             max_power: None,
             min_power: None,
-            duration: None,
+            charging_duration: None,
             energy: None,
         };
 
@@ -165,7 +168,7 @@ impl PeriodData {
                 OcpiCdrDimension::MinPower(volume) => inst.min_power = Some(volume),
                 OcpiCdrDimension::Energy(volume) => inst.energy = Some(volume),
                 OcpiCdrDimension::Time(volume) => {
-                    inst.duration = Some(volume.into());
+                    inst.charging_duration = Some(volume.into());
                 }
                 OcpiCdrDimension::ParkingTime(volume) => {
                     inst.parking_duration = Some(volume.into());
