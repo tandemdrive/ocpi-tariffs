@@ -118,7 +118,7 @@ impl InstantData {
     fn next(&self, state: &PeriodData, date_time: DateTime) -> Self {
         let mut next = self.clone();
 
-        next.total_duration = date_time - next.date_time;
+        next.total_duration = next.total_duration + (date_time - next.date_time);
         next.date_time = date_time;
 
         if let Some(duration) = state.charging_duration {

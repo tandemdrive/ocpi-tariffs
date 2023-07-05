@@ -26,7 +26,7 @@ impl<'de> Deserialize<'de> for HoursDecimal {
     {
         use serde::de::Error;
 
-        let hours = <Number as serde::Deserialize>::deserialize(deserializer)?;
+        let hours = Number::deserialize(deserializer)?;
         let duration =
             Self::from_hours_decimal(hours).map_err(|_e| D::Error::custom("overflow"))?;
         Ok(duration)
@@ -137,7 +137,7 @@ impl<'de> Deserialize<'de> for SecondsRound {
     {
         use serde::de::Error;
 
-        let seconds = <u64 as serde::Deserialize>::deserialize(deserializer)?;
+        let seconds = u64::deserialize(deserializer)?;
         let duration = Duration::seconds(
             seconds
                 .try_into()
