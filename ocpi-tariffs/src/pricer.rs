@@ -207,16 +207,20 @@ impl StepSize {
         billed_volume: &mut HoursDecimal,
         step_size: u64,
     ) -> HoursDecimal {
-        let total_seconds = total.as_num_seconds_decimal();
-        let step_size = Number::from(step_size);
+        if step_size > 0 {
+            let total_seconds = total.as_num_seconds_decimal();
+            let step_size = Number::from(step_size);
 
-        let priced_total_seconds = (total_seconds / step_size).ceil() * step_size;
-        let priced_total =
-            HoursDecimal::from_seconds_decimal(priced_total_seconds).expect("overflow");
+            let priced_total_seconds = (total_seconds / step_size).ceil() * step_size;
+            let priced_total =
+                HoursDecimal::from_seconds_decimal(priced_total_seconds).expect("overflow");
 
-        *billed_volume += priced_total - total;
+            *billed_volume += priced_total - total;
 
-        priced_total
+            priced_total
+        } else {
+            total
+        }
     }
 
     fn apply_time(&self, periods: &mut [PeriodReport], total: HoursDecimal) -> HoursDecimal {
@@ -257,24 +261,29 @@ impl StepSize {
 
     fn apply_energy(&self, periods: &mut [PeriodReport], total: Kwh) -> Kwh {
         if let Some((energy_index, price)) = &self.energy {
-            let period = &mut periods[*energy_index];
+            let step_size = price.step_size;
 
-            let volume = period
-                .dimensions
-                .energy
-                .billed_volume
-                .as_mut()
-                .expect("dimension should have a volume");
+            if step_size > 0 {
+                let period = &mut periods[*energy_index];
+                let step_size = Number::from(step_size);
 
-            let step_size = Number::from(price.step_size);
-            let billed = Kwh::from_watt_hours((total.watt_hours() / step_size).ceil() * step_size);
+                let volume = period
+                    .dimensions
+                    .energy
+                    .billed_volume
+                    .as_mut()
+                    .expect("dimension should have a volume");
 
-            *volume += billed - total;
+                let billed =
+                    Kwh::from_watt_hours((total.watt_hours() / step_size).ceil() * step_size);
 
-            billed
-        } else {
-            total
+                *volume += billed - total;
+
+                return billed;
+            }
         }
+
+        total
     }
 }
 
