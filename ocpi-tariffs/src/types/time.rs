@@ -65,13 +65,16 @@ impl From<Duration> for HoursDecimal {
 
 impl AddAssign for HoursDecimal {
     fn add_assign(&mut self, rhs: Self) {
-        self.0 = self.0 + rhs.0;
+        self.0 = self
+            .0
+            .checked_add(&rhs.0)
+            .unwrap_or_else(Duration::max_value);
     }
 }
 
 impl SubAssign for HoursDecimal {
     fn sub_assign(&mut self, rhs: Self) {
-        self.0 = self.0 - rhs.0;
+        self.0 = self.0.checked_sub(&rhs.0).unwrap_or_else(Duration::zero);
     }
 }
 

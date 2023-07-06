@@ -128,7 +128,10 @@ impl Pricer {
 
         let total_time = if let Some(first) = periods.first() {
             let last = periods.last().unwrap();
-            (last.end_date_time - first.start_date_time).into()
+            (last
+                .end_date_time
+                .signed_duration_since(first.start_date_time))
+            .into()
         } else {
             HoursDecimal::zero()
         };

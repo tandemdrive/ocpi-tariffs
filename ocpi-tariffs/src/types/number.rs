@@ -90,7 +90,7 @@ impl Div for Number {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        Self(self.0 / rhs.0)
+        Self(self.0.checked_div(rhs.0).expect("divide by zero"))
     }
 }
 
