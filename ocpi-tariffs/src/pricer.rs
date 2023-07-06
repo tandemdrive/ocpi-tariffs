@@ -261,11 +261,9 @@ impl StepSize {
 
     fn apply_energy(&self, periods: &mut [PeriodReport], total: Kwh) -> Kwh {
         if let Some((energy_index, price)) = &self.energy {
-            let step_size = price.step_size;
-
-            if step_size > 0 {
+            if price.step_size > 0 {
                 let period = &mut periods[*energy_index];
-                let step_size = Number::from(step_size);
+                let step_size = Number::from(price.step_size);
 
                 let volume = period
                     .dimensions
