@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.5.0 2023-07-10
+
+Changed the output dimension report generics to use `Dimension` trait instead of `std::ops::Mul`. 
+
+Fixed a bug were restriction's like `min_duration` and `max_duration` did not work in conjunction with `PARKING_TIME` dimensions.
+
+Fixed a bug were a tariff with a `step_size` of zero would cause a panic.
+
+Fixed a bug were a missing `tariffs` key in a `Cdr` would cause de-serialization errors.
+
+Changed the testing infrastructure to embed the test json's into the binary.
+
 ## 0.4.0 2023-06-07
 
 Changed serialization of all structures to use OCPI rounding.
