@@ -1,5 +1,3 @@
-use std::ops::Mul;
-
 use crate::{
     ocpi::{
         cdr::Cdr,
@@ -81,14 +79,18 @@ impl Pricer {
 
             let dimensions = Dimensions::new(components, &period.period_data);
 
-            total_charging_time += dimensions.time.volume.unwrap_or_else(HoursDecimal::zero);
+            total_charging_time = total_charging_time
+                .saturating_add(dimensions.time.volume.unwrap_or_else(HoursDecimal::zero));
 
-            total_energy += dimensions.energy.volume.unwrap_or_else(Kwh::zero);
+            total_energy =
+                total_energy.saturating_add(dimensions.energy.volume.unwrap_or_else(Kwh::zero));
 
-            total_parking_time += dimensions
-                .parking_time
-                .volume
-                .unwrap_or_else(HoursDecimal::zero);
+            total_parking_time = total_parking_time.saturating_add(
+                dimensions
+                    .parking_time
+                    .volume
+                    .unwrap_or_else(HoursDecimal::zero),
+            );
 
             periods.push(PeriodReport::new(period, dimensions));
         }
@@ -97,32 +99,48 @@ impl Pricer {
         let billed_energy = step_size.apply_energy(&mut periods, total_energy);
         let billed_parking_time = step_size.apply_parking_time(&mut periods, total_parking_time);
 
-        let mut total_energy_cost = None;
-        let mut total_time_cost = None;
-        let mut total_parking_cost = None;
-        let mut total_fixed_cost = None;
+        let mut total_energy_cost: Option<Price> = None;
+        let mut total_time_cost: Option<Price> = None;
+        let mut total_parking_cost: Option<Price> = None;
+        let mut total_fixed_cost: Option<Price> = None;
 
         for period in &periods {
             let dimensions = &period.dimensions;
 
             total_energy_cost = match (total_energy_cost, dimensions.energy.cost()) {
                 (None, None) => None,
-                (total, period) => Some(total.unwrap_or_default() + period.unwrap_or_default()),
+                (total, period) => Some(
+                    total
+                        .unwrap_or_default()
+                        .saturating_add(period.unwrap_or_default()),
+                ),
             };
 
             total_time_cost = match (total_time_cost, dimensions.time.cost()) {
                 (None, None) => None,
-                (total, period) => Some(total.unwrap_or_default() + period.unwrap_or_default()),
+                (total, period) => Some(
+                    total
+                        .unwrap_or_default()
+                        .saturating_add(period.unwrap_or_default()),
+                ),
             };
 
             total_parking_cost = match (total_parking_cost, dimensions.parking_time.cost()) {
                 (None, None) => None,
-                (total, period) => Some(total.unwrap_or_default() + period.unwrap_or_default()),
+                (total, period) => Some(
+                    total
+                        .unwrap_or_default()
+                        .saturating_add(period.unwrap_or_default()),
+                ),
             };
 
             total_fixed_cost = match (total_fixed_cost, dimensions.flat.cost()) {
                 (None, None) => None,
-                (total, period) => Some(total.unwrap_or_default() + period.unwrap_or_default()),
+                (total, period) => Some(
+                    total
+                        .unwrap_or_default()
+                        .saturating_add(period.unwrap_or_default()),
+                ),
             };
         }
 
@@ -143,9 +161,13 @@ impl Pricer {
             total_energy_cost,
         ]
         .into_iter()
-        .fold(None, |accum, next| match (accum, next) {
+        .fold(None, |accum: Option<Price>, next| match (accum, next) {
             (None, None) => None,
-            _ => Some(accum.unwrap_or_default() + next.unwrap_or_default()),
+            _ => Some(
+                accum
+                    .unwrap_or_default()
+                    .saturating_add(next.unwrap_or_default()),
+            ),
         });
 
         let report = Report {
@@ -206,23 +228,28 @@ impl StepSize {
     }
 
     fn duration_step_size(
-        total: HoursDecimal,
-        billed_volume: &mut HoursDecimal,
+        total_volume: HoursDecimal,
+        period_billed_volume: &mut HoursDecimal,
         step_size: u64,
     ) -> HoursDecimal {
         if step_size > 0 {
-            let total_seconds = total.as_num_seconds_decimal();
+            let total_seconds = total_volume.as_num_seconds_decimal();
             let step_size = Number::from(step_size);
 
-            let priced_total_seconds = (total_seconds / step_size).ceil() * step_size;
-            let priced_total =
-                HoursDecimal::from_seconds_decimal(priced_total_seconds).expect("overflow");
+            let total_billed_volume = HoursDecimal::from_seconds_decimal(
+                total_seconds
+                    .checked_div(step_size)
+                    .ceil()
+                    .saturating_mul(step_size),
+            )
+            .expect("overflow");
 
-            *billed_volume += priced_total - total;
+            let period_delta_volume = total_billed_volume.saturating_sub(total_volume);
+            *period_billed_volume = period_billed_volume.saturating_add(period_delta_volume);
 
-            priced_total
+            total_billed_volume
         } else {
-            total
+            total_volume
         }
     }
 
@@ -262,29 +289,35 @@ impl StepSize {
         }
     }
 
-    fn apply_energy(&self, periods: &mut [PeriodReport], total: Kwh) -> Kwh {
+    fn apply_energy(&self, periods: &mut [PeriodReport], total_volume: Kwh) -> Kwh {
         if let Some((energy_index, price)) = &self.energy {
             if price.step_size > 0 {
                 let period = &mut periods[*energy_index];
                 let step_size = Number::from(price.step_size);
 
-                let volume = period
+                let period_billed_volume = period
                     .dimensions
                     .energy
                     .billed_volume
                     .as_mut()
                     .expect("dimension should have a volume");
 
-                let billed =
-                    Kwh::from_watt_hours((total.watt_hours() / step_size).ceil() * step_size);
+                let total_billed_volume = Kwh::from_watt_hours(
+                    total_volume
+                        .watt_hours()
+                        .checked_div(step_size)
+                        .ceil()
+                        .saturating_mul(step_size),
+                );
 
-                *volume += billed - total;
+                let period_delta_volume = total_billed_volume.saturating_sub(total_volume);
+                *period_billed_volume = period_billed_volume.saturating_add(period_delta_volume);
 
-                return billed;
+                return total_billed_volume;
             }
         }
 
-        total
+        total_volume
     }
 }
 
@@ -357,7 +390,11 @@ impl PeriodReport {
             if accum.is_none() && next.is_none() {
                 None
             } else {
-                Some(accum.unwrap_or_default() + next.unwrap_or_default())
+                Some(
+                    accum
+                        .unwrap_or_default()
+                        .saturating_add(next.unwrap_or_default()),
+                )
             }
         })
     }
@@ -424,17 +461,14 @@ where
     }
 }
 
-impl<V> DimensionReport<V>
-where
-    V: Mul<Money, Output = Money> + Copy,
-{
+impl<V: Dimension> DimensionReport<V> {
     /// The total cost of this dimension during a period.
     pub fn cost(&self) -> Option<Price> {
         if let (Some(volume), Some(price)) = (self.billed_volume, self.price) {
-            let excl_vat = volume * price.price;
+            let excl_vat = volume.cost(price.price);
 
             let incl_vat = match price.vat {
-                CompatibilityVat::Vat(Some(vat)) => Some(excl_vat * vat),
+                CompatibilityVat::Vat(Some(vat)) => Some(excl_vat.apply_vat(vat)),
                 CompatibilityVat::Vat(None) => Some(excl_vat),
                 CompatibilityVat::Unknown => None,
             };
@@ -443,5 +477,29 @@ where
         } else {
             None
         }
+    }
+}
+
+/// An OCPI tariff dimension
+pub trait Dimension: Copy {
+    /// The cost of this dimension at a certain price.
+    fn cost(&self, price: Money) -> Money;
+}
+
+impl Dimension for Kwh {
+    fn cost(&self, price: Money) -> Money {
+        price.kwh_cost(*self)
+    }
+}
+
+impl Dimension for () {
+    fn cost(&self, price: Money) -> Money {
+        price
+    }
+}
+
+impl Dimension for HoursDecimal {
+    fn cost(&self, price: Money) -> Money {
+        price.time_cost(*self)
     }
 }

@@ -1,7 +1,4 @@
-use std::{
-    fmt::Display,
-    ops::{Add, Div, Mul, Sub},
-};
+use std::fmt::Display;
 
 use serde::{Deserialize, Deserializer, Serialize};
 
@@ -16,6 +13,22 @@ impl Number {
     pub(crate) fn with_scale(mut self) -> Self {
         self.0.rescale(4);
         self
+    }
+
+    pub(crate) fn checked_div(self, other: Self) -> Self {
+        Self(self.0.checked_div(other.0).expect("divide by zero"))
+    }
+
+    pub(crate) fn saturating_sub(self, other: Self) -> Self {
+        Self(self.0.saturating_sub(other.0))
+    }
+
+    pub(crate) fn saturating_add(self, other: Self) -> Self {
+        Self(self.0.saturating_add(other.0))
+    }
+
+    pub(crate) fn saturating_mul(self, other: Self) -> Self {
+        Self(self.0.saturating_mul(other.0))
     }
 }
 
@@ -62,43 +75,17 @@ impl From<u64> for Number {
     }
 }
 
+impl From<i32> for Number {
+    fn from(value: i32) -> Self {
+        Self(value.into())
+    }
+}
+
 impl TryFrom<Number> for i64 {
     type Error = rust_decimal::Error;
 
     fn try_from(value: Number) -> Result<Self, Self::Error> {
         value.0.try_into()
-    }
-}
-
-impl Add for Number {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0.saturating_add(rhs.0))
-    }
-}
-
-impl Mul for Number {
-    type Output = Self;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        Self(self.0.saturating_mul(rhs.0))
-    }
-}
-
-impl Div for Number {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        Self(self.0.checked_div(rhs.0).expect("divide by zero"))
-    }
-}
-
-impl Sub for Number {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0.saturating_sub(rhs.0))
     }
 }
 

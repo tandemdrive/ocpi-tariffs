@@ -135,7 +135,7 @@ impl InstantData {
         }
 
         if let Some(energy) = state.energy {
-            next.total_energy += energy;
+            next.total_energy = next.total_energy.saturating_add(energy);
         }
 
         next

@@ -1,7 +1,4 @@
-use std::{
-    fmt::Display,
-    ops::{Add, AddAssign, Sub, SubAssign},
-};
+use std::fmt::Display;
 
 use chrono::Duration;
 use serde::{Deserialize, Serialize, Serializer};
@@ -63,63 +60,44 @@ impl From<Duration> for HoursDecimal {
     }
 }
 
-impl AddAssign for HoursDecimal {
-    fn add_assign(&mut self, rhs: Self) {
-        self.0 = self
-            .0
-            .checked_add(&rhs.0)
-            .unwrap_or_else(Duration::max_value);
-    }
-}
-
-impl SubAssign for HoursDecimal {
-    fn sub_assign(&mut self, rhs: Self) {
-        self.0 = self.0.checked_sub(&rhs.0).unwrap_or_else(Duration::zero);
-    }
-}
-
-impl Add for HoursDecimal {
-    type Output = Self;
-
-    fn add(mut self, rhs: Self) -> Self::Output {
-        self += rhs;
-
-        self
-    }
-}
-
-impl Sub for HoursDecimal {
-    type Output = Self;
-
-    fn sub(mut self, rhs: Self) -> Self::Output {
-        self -= rhs;
-
-        self
-    }
-}
-
 impl HoursDecimal {
     pub(crate) fn zero() -> Self {
         Self(Duration::zero())
     }
 
     pub(crate) fn as_num_seconds_decimal(&self) -> Number {
-        Number::from(self.0.num_milliseconds()) / Number::from(MILLIS_IN_SEC)
+        Number::from(self.0.num_milliseconds()).checked_div(Number::from(MILLIS_IN_SEC))
     }
 
     pub(crate) fn as_num_hours_decimal(&self) -> Number {
         Number::from(self.0.num_milliseconds())
-            / Number::from(MILLIS_IN_SEC * SECS_IN_MIN * MINS_IN_HOUR)
+            .checked_div(Number::from(MILLIS_IN_SEC * SECS_IN_MIN * MINS_IN_HOUR))
     }
 
     pub(crate) fn from_seconds_decimal(seconds: Number) -> Result<Self, rust_decimal::Error> {
-        let millis = seconds * Number::from(MILLIS_IN_SEC);
+        let millis = seconds.saturating_mul(Number::from(MILLIS_IN_SEC));
+
         Ok(Self(Duration::milliseconds(millis.try_into()?)))
     }
 
     pub(crate) fn from_hours_decimal(hours: Number) -> Result<Self, rust_decimal::Error> {
-        let millis = hours * Number::from(MILLIS_IN_SEC * SECS_IN_MIN * MINS_IN_HOUR);
+        let millis = hours.saturating_mul(Number::from(MILLIS_IN_SEC * SECS_IN_MIN * MINS_IN_HOUR));
+
         Ok(Self(Duration::milliseconds(millis.try_into()?)))
+    }
+
+    /// Saturating subtraction.
+    pub fn saturating_sub(self, other: Self) -> Self {
+        Self(self.0.checked_sub(&other.0).unwrap_or_else(Duration::zero))
+    }
+
+    /// Saturating addition.
+    pub fn saturating_add(self, other: Self) -> Self {
+        Self(
+            self.0
+                .checked_add(&other.0)
+                .unwrap_or_else(Duration::max_value),
+        )
     }
 }
 
