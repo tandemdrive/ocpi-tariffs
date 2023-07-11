@@ -10,6 +10,8 @@ Fixed a bug were restriction's like `min_duration` and `max_duration` did not wo
 
 Fixed a bug were a tariff with a `step_size` of zero would cause a panic.
 
+Changed all non-dividing arithmetic to saturating operations.
+
 Fixed a bug were a missing `tariffs` key in a `Cdr` would cause de-serialization errors.
 
 Changed the testing infrastructure to embed the test json's into the binary.
