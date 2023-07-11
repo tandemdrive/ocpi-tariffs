@@ -1,9 +1,5 @@
-use std::{
-    fmt::Display,
-    ops::{Add, AddAssign, Mul, Sub},
-};
+use std::fmt::Display;
 
-use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
 
 use super::number::Number;
@@ -18,12 +14,22 @@ impl Kwh {
         Self(Number::default())
     }
 
+    /// Saturating addition
+    pub fn saturating_add(self, other: Self) -> Self {
+        Self(self.0.saturating_add(other.0))
+    }
+
+    /// Saturating subtraction
+    pub fn saturating_sub(self, other: Self) -> Self {
+        Self(self.0.saturating_sub(other.0))
+    }
+
     pub(crate) fn watt_hours(self) -> Number {
-        self.0 * Number::from(dec!(1000.0))
+        self.0.saturating_mul(Number::from(1000))
     }
 
     pub(crate) fn from_watt_hours(num: Number) -> Self {
-        Self(num / dec!(1000.0).into())
+        Self(num.checked_div(Number::from(1000)))
     }
 
     /// Round this number to the OCPI specified amount of decimals.
@@ -41,36 +47,6 @@ impl From<Kwh> for Number {
 impl Display for Kwh {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:.4}", self.0)
-    }
-}
-
-impl Add for Kwh {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
-    }
-}
-
-impl AddAssign for Kwh {
-    fn add_assign(&mut self, rhs: Self) {
-        self.0 = self.0 + rhs.0;
-    }
-}
-
-impl Sub for Kwh {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0 - rhs.0)
-    }
-}
-
-impl Mul<Number> for Kwh {
-    type Output = Self;
-
-    fn mul(self, rhs: Number) -> Self::Output {
-        Self(self.0 * rhs)
     }
 }
 

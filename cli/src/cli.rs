@@ -3,7 +3,6 @@ use std::{
     fmt::Display,
     fs::File,
     io::{stdin, Read},
-    ops::Mul,
     path::PathBuf,
     process::exit,
 };
@@ -28,7 +27,7 @@ use ocpi_tariffs::{
         tariff::{CompatibilityVat, OcpiTariff},
         v211,
     },
-    pricer::{DimensionReport, Pricer, Report},
+    pricer::{Dimension, DimensionReport, Pricer, Report},
     types::{
         electricity::Kwh,
         money::{Money, Price},
@@ -427,7 +426,7 @@ impl<V: Display> PeriodTable<V> {
 
     pub fn row<T>(&mut self, dim: &DimensionReport<T>, time: DateTime<Tz>)
     where
-        T: Into<V> + Mul<Money, Output = Money> + Copy,
+        T: Into<V> + Dimension,
     {
         let cost = dim.cost();
         self.rows.push(PeriodComponent {

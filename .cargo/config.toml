@@ -17,7 +17,6 @@ rustflags = [
     "-Wtrivial_numeric_casts",
     "-Wunsafe_code",
     "-Wunused_import_braces",
-    "-Wunused_qualifications",
 
     # https://rust-lang.github.io/rust-clippy/master/index.html
     "-Aclippy::doc_markdown",
