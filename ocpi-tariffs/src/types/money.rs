@@ -1,10 +1,5 @@
-use std::{
-    fmt::Display,
-    ops::{Add, AddAssign, Mul},
-};
-
-use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 use super::{electricity::Kwh, number::Number, time::HoursDecimal};
 
@@ -37,30 +32,18 @@ impl Price {
             incl_vat: self.incl_vat.map(Money::with_scale),
         }
     }
-}
 
-impl Add for Price {
-    type Output = Price;
-
-    fn add(self, rhs: Self) -> Self::Output {
+    /// Saturating addition.
+    pub fn saturating_add(self, rhs: Self) -> Self {
         Self {
-            excl_vat: self.excl_vat + rhs.excl_vat,
+            excl_vat: self.excl_vat.saturating_add(rhs.excl_vat),
             incl_vat: match (self.incl_vat, rhs.incl_vat) {
-                (Some(lhs_incl_vat), Some(rhs_incl_vat)) => Some(lhs_incl_vat + rhs_incl_vat),
+                (Some(lhs_incl_vat), Some(rhs_incl_vat)) => {
+                    Some(lhs_incl_vat.saturating_add(rhs_incl_vat))
+                }
                 _ => None,
             },
         }
-    }
-}
-
-impl AddAssign for Price {
-    fn add_assign(&mut self, rhs: Self) {
-        self.excl_vat = self.excl_vat + rhs.excl_vat;
-
-        self.incl_vat = match (self.incl_vat, rhs.incl_vat) {
-            (Some(lhs_incl_vat), Some(rhs_incl_vat)) => Some(lhs_incl_vat + rhs_incl_vat),
-            _ => None,
-        };
     }
 }
 
@@ -84,79 +67,35 @@ impl Money {
     pub fn with_scale(self) -> Self {
         Self(self.0.with_scale())
     }
-}
 
-impl Add for Money {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
+    /// Saturating addition
+    pub fn saturating_add(self, other: Self) -> Self {
+        Self(self.0.saturating_add(other.0))
     }
-}
 
-impl Mul<Number> for Money {
-    type Output = Money;
-
-    fn mul(self, rhs: Number) -> Self::Output {
-        Self(self.0 * rhs)
+    /// Saturating subtraction
+    pub fn saturating_sub(self, other: Self) -> Self {
+        Self(self.0.saturating_sub(other.0))
     }
-}
 
-impl Mul<Money> for Number {
-    type Output = Money;
-
-    fn mul(self, rhs: Money) -> Self::Output {
-        Money(rhs.0 * self)
+    /// Saturating multiplication
+    pub fn saturating_mul(self, other: Self) -> Self {
+        Self(self.0.saturating_mul(other.0))
     }
-}
 
-impl Mul<Kwh> for Money {
-    type Output = Money;
-
-    fn mul(self, rhs: Kwh) -> Self::Output {
-        Self(self.0 * Number::from(rhs))
+    /// Apply a VAT percentage to this monetary amount.
+    pub fn apply_vat(self, vat: Vat) -> Self {
+        Self(self.0.saturating_mul(vat.as_fraction()))
     }
-}
 
-impl Mul<Money> for Kwh {
-    type Output = Money;
-
-    fn mul(self, rhs: Money) -> Self::Output {
-        rhs * self
+    /// Cost of a certain amount of [`Kwh`] with this price.
+    pub fn kwh_cost(self, kwh: Kwh) -> Self {
+        Self(self.0.saturating_mul(kwh.into()))
     }
-}
 
-impl Mul<HoursDecimal> for Money {
-    type Output = Money;
-
-    fn mul(self, rhs: HoursDecimal) -> Self::Output {
-        let cost = self.0 * rhs.as_num_hours_decimal();
-
-        Self(cost)
-    }
-}
-
-impl Mul<Money> for HoursDecimal {
-    type Output = Money;
-
-    fn mul(self, rhs: Money) -> Self::Output {
-        rhs * self
-    }
-}
-
-impl Mul<()> for Money {
-    type Output = Money;
-
-    fn mul(self, _: ()) -> Self::Output {
-        self
-    }
-}
-
-impl Mul<Money> for () {
-    type Output = Money;
-
-    fn mul(self, rhs: Money) -> Self::Output {
-        rhs * self
+    /// Cost of a certain amount of [`HoursDecimal`] with this price.
+    pub fn time_cost(self, hours: HoursDecimal) -> Self {
+        Self(self.0.saturating_mul(hours.as_num_hours_decimal()))
     }
 }
 
@@ -177,19 +116,9 @@ impl Display for Money {
 #[serde(transparent)]
 pub struct Vat(Number);
 
-impl Mul<Money> for Vat {
-    type Output = Money;
-
-    fn mul(self, rhs: Money) -> Self::Output {
-        let vat = (self.0 / Number::from(dec!(100))) + Number::from(dec!(1.0));
-        Money(rhs.0 * vat)
-    }
-}
-
-impl Mul<Vat> for Money {
-    type Output = Money;
-    fn mul(self, rhs: Vat) -> Self::Output {
-        rhs * self
+impl Vat {
+    pub(crate) fn as_fraction(self) -> Number {
+        self.0.checked_div(100.into()).saturating_add(1.into())
     }
 }
 

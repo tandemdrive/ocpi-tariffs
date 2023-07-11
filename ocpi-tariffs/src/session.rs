@@ -118,15 +118,24 @@ impl InstantData {
     fn next(&self, state: &PeriodData, date_time: DateTime) -> Self {
         let mut next = self.clone();
 
-        next.total_duration = next.total_duration + (date_time - next.date_time);
+        let duration = date_time.signed_duration_since(next.date_time);
+
+        next.total_duration = next
+            .total_duration
+            .checked_add(&duration)
+            .unwrap_or_else(Duration::max_value);
+
         next.date_time = date_time;
 
         if let Some(duration) = state.charging_duration {
-            next.total_charging_duration = next.total_charging_duration + duration;
+            next.total_charging_duration = next
+                .total_charging_duration
+                .checked_add(&duration)
+                .unwrap_or_else(Duration::max_value);
         }
 
         if let Some(energy) = state.energy {
-            next.total_energy += energy;
+            next.total_energy = next.total_energy.saturating_add(energy);
         }
 
         next
