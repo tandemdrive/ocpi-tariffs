@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- Added the Cargo.lock file to the git repo
+  See: https://blog.rust-lang.org/2023/08/29/committing-lockfiles.html
+- Upgrade dependencies
+
 ## 0.5.0 2023-07-10
 
 Changed the output dimension report generics to use `Dimension` trait instead of `std::ops::Mul`. 
