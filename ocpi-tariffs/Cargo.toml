@@ -12,9 +12,9 @@ ocpi-v211 = []
 
 [dependencies]
 chrono-tz.workspace = true
-chrono = { version = "0.4.24", default-features = false, features = ["serde"] }
-rust_decimal_macros = "1.29.1"
-rust_decimal = { version = "1.29.1", features = ["serde-with-arbitrary-precision"] }
+chrono = { version = "0.4.31", default-features = false, features = ["serde"] }
+rust_decimal_macros = "1.32.0"
+rust_decimal = { version = "1.32.0", features = ["serde-with-arbitrary-precision"] }
 serde.workspace = true
 
 [dev-dependencies]
