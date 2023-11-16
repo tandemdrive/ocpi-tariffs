@@ -77,7 +77,7 @@ impl Pricer {
 
             step_size.update(index, &components, period);
 
-            let dimensions = Dimensions::new(components, &period.period_data);
+            let dimensions = Dimensions::new(&components, &period.period_data);
 
             total_charging_time = total_charging_time
                 .saturating_add(dimensions.time.volume.unwrap_or_else(HoursDecimal::zero));
@@ -414,7 +414,7 @@ pub struct Dimensions {
 }
 
 impl Dimensions {
-    pub(crate) fn new(components: PriceComponents, data: &PeriodData) -> Self {
+    pub(crate) fn new(components: &PriceComponents, data: &PeriodData) -> Self {
         Self {
             parking_time: DimensionReport::new(
                 components.parking,
