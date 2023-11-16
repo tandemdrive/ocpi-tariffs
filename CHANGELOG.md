@@ -2,11 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 0.5.1 2023-11-16
 
 - Added the Cargo.lock file to the git repo
   See: https://blog.rust-lang.org/2023/08/29/committing-lockfiles.html
 - Upgrade dependencies
+- Added conversion from ocpi types to decimal
 
 ## 0.5.0 2023-07-10
 
