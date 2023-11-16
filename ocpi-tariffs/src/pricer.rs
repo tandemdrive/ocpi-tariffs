@@ -233,10 +233,10 @@ impl StepSize {
         step_size: u64,
     ) -> HoursDecimal {
         if step_size > 0 {
-            let total_seconds = total_volume.as_num_seconds_decimal();
+            let total_seconds = total_volume.as_num_seconds_number();
             let step_size = Number::from(step_size);
 
-            let total_billed_volume = HoursDecimal::from_seconds_decimal(
+            let total_billed_volume = HoursDecimal::from_seconds_number(
                 total_seconds
                     .checked_div(step_size)
                     .ceil()

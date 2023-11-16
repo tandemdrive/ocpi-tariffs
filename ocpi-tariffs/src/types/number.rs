@@ -32,6 +32,12 @@ impl Number {
     }
 }
 
+impl From<Number> for rust_decimal::Decimal {
+    fn from(value: Number) -> Self {
+        value.0
+    }
+}
+
 impl<'de> Deserialize<'de> for Number {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

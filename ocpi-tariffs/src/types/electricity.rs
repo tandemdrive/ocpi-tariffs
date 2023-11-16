@@ -38,6 +38,12 @@ impl Kwh {
     }
 }
 
+impl From<Kwh> for rust_decimal::Decimal {
+    fn from(value: Kwh) -> Self {
+        value.0.into()
+    }
+}
+
 impl From<Kwh> for Number {
     fn from(value: Kwh) -> Self {
         value.0
@@ -55,6 +61,12 @@ impl Display for Kwh {
 #[serde(transparent)]
 pub struct Kw(Number);
 
+impl From<Kw> for rust_decimal::Decimal {
+    fn from(value: Kw) -> Self {
+        value.0.into()
+    }
+}
+
 /// A value of amperes.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 #[serde(transparent)]
@@ -63,5 +75,11 @@ pub struct Ampere(Number);
 impl From<Number> for Ampere {
     fn from(value: Number) -> Self {
         Self(value)
+    }
+}
+
+impl From<Ampere> for rust_decimal::Decimal {
+    fn from(value: Ampere) -> Self {
+        value.0.into()
     }
 }
