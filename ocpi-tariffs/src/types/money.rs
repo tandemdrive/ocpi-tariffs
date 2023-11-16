@@ -95,7 +95,13 @@ impl Money {
 
     /// Cost of a certain amount of [`HoursDecimal`] with this price.
     pub fn time_cost(self, hours: HoursDecimal) -> Self {
-        Self(self.0.saturating_mul(hours.as_num_hours_decimal()))
+        Self(self.0.saturating_mul(hours.as_num_hours_number()))
+    }
+}
+
+impl From<Money> for rust_decimal::Decimal {
+    fn from(value: Money) -> Self {
+        value.0.into()
     }
 }
 
@@ -115,6 +121,12 @@ impl Display for Money {
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Deserialize, Serialize)]
 #[serde(transparent)]
 pub struct Vat(Number);
+
+impl From<Vat> for rust_decimal::Decimal {
+    fn from(value: Vat) -> Self {
+        value.0.into()
+    }
+}
 
 impl Vat {
     pub(crate) fn as_fraction(self) -> Number {
