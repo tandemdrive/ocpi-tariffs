@@ -31,6 +31,14 @@ pub enum Error {
     /// A valid tariff must have a start date time before the start of the session and a end date
     /// time after the start of the session.
     NoValidTariff,
+    /// A numeric overflow occurred during tariff calculation.
+    NumericOverflow,
+}
+
+impl From<rust_decimal::Error> for Error {
+    fn from(_: rust_decimal::Error) -> Self {
+        Self::NumericOverflow
+    }
 }
 
 impl std::error::Error for Error {}

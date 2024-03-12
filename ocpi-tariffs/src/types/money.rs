@@ -130,7 +130,10 @@ impl From<Vat> for rust_decimal::Decimal {
 
 impl Vat {
     pub(crate) fn as_fraction(self) -> Number {
-        self.0.checked_div(100.into()).saturating_add(1.into())
+        self.0
+            .checked_div(100.into())
+            .unwrap_or_else(|| unreachable!())
+            .saturating_add(1.into())
     }
 }
 

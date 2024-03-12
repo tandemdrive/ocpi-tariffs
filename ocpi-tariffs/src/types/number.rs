@@ -15,8 +15,8 @@ impl Number {
         self
     }
 
-    pub(crate) fn checked_div(self, other: Self) -> Self {
-        Self(self.0.checked_div(other.0).expect("divide by zero"))
+    pub(crate) fn checked_div(self, other: Self) -> Option<Self> {
+        Some(Self(self.0.checked_div(other.0)?))
     }
 
     pub(crate) fn saturating_sub(self, other: Self) -> Self {
