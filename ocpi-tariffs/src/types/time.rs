@@ -3,6 +3,8 @@ use std::fmt::Display;
 use chrono::Duration;
 use serde::{Deserialize, Serialize, Serializer};
 
+use crate::Error;
+
 use super::number::Number;
 
 const SECS_IN_MIN: i64 = 60;
@@ -65,7 +67,9 @@ impl HoursDecimal {
     }
 
     pub(crate) fn as_num_seconds_number(&self) -> Number {
-        Number::from(self.0.num_milliseconds()).checked_div(Number::from(MILLIS_IN_SEC))
+        Number::from(self.0.num_milliseconds())
+            .checked_div(Number::from(MILLIS_IN_SEC))
+            .unwrap_or_else(|| unreachable!("divisor is non-zero"))
     }
 
     /// Convert into decimal representation.
@@ -76,18 +80,23 @@ impl HoursDecimal {
     pub(crate) fn as_num_hours_number(&self) -> Number {
         Number::from(self.0.num_milliseconds())
             .checked_div(Number::from(MILLIS_IN_SEC * SECS_IN_MIN * MINS_IN_HOUR))
+            .unwrap_or_else(|| unreachable!("divisor is non-zero"))
     }
 
-    pub(crate) fn from_seconds_number(seconds: Number) -> Result<Self, rust_decimal::Error> {
+    pub(crate) fn from_seconds_number(seconds: Number) -> Result<Self, Error> {
         let millis = seconds.saturating_mul(Number::from(MILLIS_IN_SEC));
 
-        Ok(Self(Duration::milliseconds(millis.try_into()?)))
+        Ok(Self(
+            Duration::try_milliseconds(millis.try_into()?).ok_or(Error::NumericOverflow)?,
+        ))
     }
 
-    pub(crate) fn from_hours_number(hours: Number) -> Result<Self, rust_decimal::Error> {
+    pub(crate) fn from_hours_number(hours: Number) -> Result<Self, Error> {
         let millis = hours.saturating_mul(Number::from(MILLIS_IN_SEC * SECS_IN_MIN * MINS_IN_HOUR));
 
-        Ok(Self(Duration::milliseconds(millis.try_into()?)))
+        Ok(Self(
+            Duration::try_milliseconds(millis.try_into()?).ok_or(Error::NumericOverflow)?,
+        ))
     }
 
     /// Saturating subtraction.
@@ -120,14 +129,14 @@ impl<'de> Deserialize<'de> for SecondsRound {
     where
         D: serde::Deserializer<'de>,
     {
-        use serde::de::Error;
+        use serde::de::Error as DeError;
 
-        let seconds = u64::deserialize(deserializer)?;
-        let duration = Duration::seconds(
-            seconds
-                .try_into()
-                .map_err(|_e| D::Error::custom("overflow"))?,
-        );
+        let seconds: i64 = u64::deserialize(deserializer)?
+            .try_into()
+            .map_err(|_| DeError::custom(Error::NumericOverflow))?;
+
+        let duration = Duration::try_seconds(seconds)
+            .ok_or_else(|| DeError::custom(Error::NumericOverflow))?;
 
         Ok(Self(duration))
     }
@@ -239,28 +248,28 @@ mod hour_decimal_tests {
 
     #[test]
     fn zero_minutes_should_be_zero_hours() {
-        let hours: HoursDecimal = Duration::minutes(0).into();
+        let hours: HoursDecimal = Duration::try_minutes(0).unwrap().into();
         let number: Number = hours.as_num_hours_number();
         assert_eq!(number, Number::from(dec!(0.0)));
     }
 
     #[test]
     fn thirty_minutes_should_be_fraction_of_hour() {
-        let hours: HoursDecimal = Duration::minutes(30).into();
+        let hours: HoursDecimal = Duration::try_minutes(30).unwrap().into();
         let number: Number = hours.as_num_hours_number();
         assert_eq!(number, Number::from(dec!(0.5)));
     }
 
     #[test]
     fn sixty_minutes_should_be_fraction_of_hour() {
-        let hours: HoursDecimal = Duration::minutes(60).into();
+        let hours: HoursDecimal = Duration::try_minutes(60).unwrap().into();
         let number: Number = hours.as_num_hours_number();
         assert_eq!(number, Number::from(dec!(1.0)));
     }
 
     #[test]
     fn ninety_minutes_should_be_fraction_of_hour() {
-        let hours: HoursDecimal = Duration::minutes(90).into();
+        let hours: HoursDecimal = Duration::try_minutes(90).unwrap().into();
         let number: Number = hours.as_num_hours_number();
         assert_eq!(number, Number::from(dec!(1.5)));
     }

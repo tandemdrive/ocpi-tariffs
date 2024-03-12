@@ -12,11 +12,11 @@ fn test_json(cdr: &str, path: PathBuf) {
     let cdr = serde_json::from_str(cdr).unwrap();
     let tariff = serde_json::from_str(&tariff).unwrap();
 
-    validate_cdr(cdr, tariff).unwrap();
+    validate_cdr(&cdr, tariff).unwrap();
 }
 
-pub fn validate_cdr(cdr: Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::Error> {
-    let pricer = Pricer::with_tariffs(&cdr, &[tariff], Tz::UTC);
+pub fn validate_cdr(cdr: &Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::Error> {
+    let pricer = Pricer::with_tariffs(cdr, &[tariff], Tz::UTC);
     let report = pricer.build_report()?;
 
     assert_eq!(

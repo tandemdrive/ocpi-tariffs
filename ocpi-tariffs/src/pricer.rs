@@ -95,9 +95,9 @@ impl Pricer {
             periods.push(PeriodReport::new(period, dimensions));
         }
 
-        let billed_charging_time = step_size.apply_time(&mut periods, total_charging_time);
+        let billed_charging_time = step_size.apply_time(&mut periods, total_charging_time)?;
         let billed_energy = step_size.apply_energy(&mut periods, total_energy);
-        let billed_parking_time = step_size.apply_parking_time(&mut periods, total_parking_time);
+        let billed_parking_time = step_size.apply_parking_time(&mut periods, total_parking_time)?;
 
         let mut total_energy_cost: Option<Price> = None;
         let mut total_time_cost: Option<Price> = None;
@@ -231,7 +231,7 @@ impl StepSize {
         total_volume: HoursDecimal,
         period_billed_volume: &mut HoursDecimal,
         step_size: u64,
-    ) -> HoursDecimal {
+    ) -> Result<HoursDecimal> {
         if step_size > 0 {
             let total_seconds = total_volume.as_num_seconds_number();
             let step_size = Number::from(step_size);
@@ -239,21 +239,25 @@ impl StepSize {
             let total_billed_volume = HoursDecimal::from_seconds_number(
                 total_seconds
                     .checked_div(step_size)
+                    .unwrap_or_else(|| unreachable!("divisor is non-zero"))
                     .ceil()
                     .saturating_mul(step_size),
-            )
-            .expect("overflow");
+            )?;
 
             let period_delta_volume = total_billed_volume.saturating_sub(total_volume);
             *period_billed_volume = period_billed_volume.saturating_add(period_delta_volume);
 
-            total_billed_volume
+            Ok(total_billed_volume)
         } else {
-            total_volume
+            Ok(total_volume)
         }
     }
 
-    fn apply_time(&self, periods: &mut [PeriodReport], total: HoursDecimal) -> HoursDecimal {
+    fn apply_time(
+        &self,
+        periods: &mut [PeriodReport],
+        total: HoursDecimal,
+    ) -> Result<HoursDecimal> {
         if let (Some((time_index, price)), None) = (&self.time, &self.parking_time) {
             let period = &mut periods[*time_index];
             let volume = period
@@ -265,7 +269,7 @@ impl StepSize {
 
             Self::duration_step_size(total, volume, price.step_size)
         } else {
-            total
+            Ok(total)
         }
     }
 
@@ -273,7 +277,7 @@ impl StepSize {
         &self,
         periods: &mut [PeriodReport],
         total: HoursDecimal,
-    ) -> HoursDecimal {
+    ) -> Result<HoursDecimal> {
         if let Some((parking_index, price)) = &self.parking_time {
             let period = &mut periods[*parking_index];
             let volume = period
@@ -285,7 +289,7 @@ impl StepSize {
 
             Self::duration_step_size(total, volume, price.step_size)
         } else {
-            total
+            Ok(total)
         }
     }
 
@@ -306,6 +310,7 @@ impl StepSize {
                     total_volume
                         .watt_hours()
                         .checked_div(step_size)
+                        .unwrap_or_else(|| unreachable!("divisor is non-zero"))
                         .ceil()
                         .saturating_mul(step_size),
                 );

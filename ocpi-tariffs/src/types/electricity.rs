@@ -29,7 +29,10 @@ impl Kwh {
     }
 
     pub(crate) fn from_watt_hours(num: Number) -> Self {
-        Self(num.checked_div(Number::from(1000)))
+        Self(
+            num.checked_div(Number::from(1000))
+                .unwrap_or_else(|| unreachable!("divisor is non-zero")),
+        )
     }
 
     /// Round this number to the OCPI specified amount of decimals.
