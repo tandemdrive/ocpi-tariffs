@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.5.2 2024-03-12
+
+- Upgrade dependencies
+- Added error variant for overflows
+
 ## 0.5.1 2023-11-16
 
 - Added the Cargo.lock file to the git repo
