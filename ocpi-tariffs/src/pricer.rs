@@ -239,7 +239,7 @@ impl StepSize {
             let total_billed_volume = HoursDecimal::from_seconds_number(
                 total_seconds
                     .checked_div(step_size)
-                    .unwrap_or_else(|| unreachable!())
+                    .unwrap_or_else(|| unreachable!("divisor is non-zero"))
                     .ceil()
                     .saturating_mul(step_size),
             )?;
@@ -310,7 +310,7 @@ impl StepSize {
                     total_volume
                         .watt_hours()
                         .checked_div(step_size)
-                        .unwrap_or_else(|| unreachable!())
+                        .unwrap_or_else(|| unreachable!("divisor is non-zero"))
                         .ceil()
                         .saturating_mul(step_size),
                 );

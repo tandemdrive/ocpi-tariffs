@@ -69,7 +69,7 @@ impl HoursDecimal {
     pub(crate) fn as_num_seconds_number(&self) -> Number {
         Number::from(self.0.num_milliseconds())
             .checked_div(Number::from(MILLIS_IN_SEC))
-            .unwrap_or_else(|| unreachable!())
+            .unwrap_or_else(|| unreachable!("divisor is non-zero"))
     }
 
     /// Convert into decimal representation.
@@ -80,7 +80,7 @@ impl HoursDecimal {
     pub(crate) fn as_num_hours_number(&self) -> Number {
         Number::from(self.0.num_milliseconds())
             .checked_div(Number::from(MILLIS_IN_SEC * SECS_IN_MIN * MINS_IN_HOUR))
-            .unwrap_or_else(|| unreachable!())
+            .unwrap_or_else(|| unreachable!("divisor is non-zero"))
     }
 
     pub(crate) fn from_seconds_number(seconds: Number) -> Result<Self, Error> {
@@ -129,15 +129,14 @@ impl<'de> Deserialize<'de> for SecondsRound {
     where
         D: serde::Deserializer<'de>,
     {
-        use serde::de::Error;
+        use serde::de::Error as DeError;
 
-        let seconds = u64::deserialize(deserializer)?;
-        let duration = Duration::try_seconds(
-            seconds
-                .try_into()
-                .map_err(|_e| D::Error::custom("overflow"))?,
-        )
-        .ok_or_else(|| D::Error::custom("overflow"))?;
+        let seconds: i64 = u64::deserialize(deserializer)?
+            .try_into()
+            .map_err(|_| DeError::custom(Error::NumericOverflow))?;
+
+        let duration = Duration::try_seconds(seconds)
+            .ok_or_else(|| DeError::custom(Error::NumericOverflow))?;
 
         Ok(Self(duration))
     }

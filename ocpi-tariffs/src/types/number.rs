@@ -16,7 +16,7 @@ impl Number {
     }
 
     pub(crate) fn checked_div(self, other: Self) -> Option<Self> {
-        Some(Self(self.0.checked_div(other.0)?))
+        self.0.checked_div(other.0).map(Self)
     }
 
     pub(crate) fn saturating_sub(self, other: Self) -> Self {

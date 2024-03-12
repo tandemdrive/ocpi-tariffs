@@ -45,7 +45,12 @@ impl std::error::Error for Error {}
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("No valid tariff has been found in the list of provided tariffs")
+        let display = match self {
+            Self::NoValidTariff => "No valid tariff has been found in the list of provided tariffs",
+            Self::NumericOverflow => "A numeric overflow occurred during tariff calculation",
+        };
+
+        f.write_str(display)
     }
 }
 

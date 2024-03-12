@@ -132,7 +132,7 @@ impl Vat {
     pub(crate) fn as_fraction(self) -> Number {
         self.0
             .checked_div(100.into())
-            .unwrap_or_else(|| unreachable!())
+            .unwrap_or_else(|| unreachable!("divisor is non-zero"))
             .saturating_add(1.into())
     }
 }
