@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use chrono::Duration;
+use chrono_tz::Tz;
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::Error;
@@ -235,6 +236,66 @@ impl From<DayOfWeek> for chrono::Weekday {
             DayOfWeek::Sunday => Self::Sun,
         }
     }
+}
+
+/// Mapping of European countries to time zones with geographical naming
+///
+/// This is only possible for countries with a single time zone and only for countries as they
+/// currently exist (2024). It's a best effort approach to determine a timezone from just a ALPHA-3
+/// ISO 3166-1 country code.
+///
+/// In small edge cases (e.g. Gibraltar) this detection might generate the wrong time-zone.
+pub(crate) fn try_detect_time_zone(code: &str) -> Option<Tz> {
+    let tz = match code {
+        "AND" => Tz::Europe__Andorra,
+        "ALB" => Tz::Europe__Tirane,
+        "AUT" => Tz::Europe__Vienna,
+        "BIH" => Tz::Europe__Sarajevo,
+        "BEL" => Tz::Europe__Brussels,
+        "BGR" => Tz::Europe__Sofia,
+        "BLR" => Tz::Europe__Minsk,
+        "CHE" => Tz::Europe__Zurich,
+        "CYP" => Tz::Europe__Nicosia,
+        "CZE" => Tz::Europe__Prague,
+        "DEU" => Tz::Europe__Berlin,
+        "DNK" => Tz::Europe__Copenhagen,
+        "EST" => Tz::Europe__Tallinn,
+        "ESP" => Tz::Europe__Madrid,
+        "FIN" => Tz::Europe__Helsinki,
+        "FRA" => Tz::Europe__Paris,
+        "GBR" => Tz::Europe__London,
+        "GRC" => Tz::Europe__Athens,
+        "HRV" => Tz::Europe__Zagreb,
+        "HUN" => Tz::Europe__Budapest,
+        "IRN" => Tz::Europe__Dublin,
+        "ISL" => Tz::Iceland,
+        "ITA" => Tz::Europe__Rome,
+        "LIE" => Tz::Europe__Vaduz,
+        "LTU" => Tz::Europe__Vilnius,
+        "LUX" => Tz::Europe__Luxembourg,
+        "LVA" => Tz::Europe__Riga,
+        "MCO" => Tz::Europe__Monaco,
+        "MDA" => Tz::Europe__Chisinau,
+        "MNE" => Tz::Europe__Podgorica,
+        "MKD" => Tz::Europe__Skopje,
+        "MLT" => Tz::Europe__Malta,
+        "NLD" => Tz::Europe__Amsterdam,
+        "NOR" => Tz::Europe__Oslo,
+        "POL" => Tz::Europe__Warsaw,
+        "PRT" => Tz::Europe__Lisbon,
+        "ROU" => Tz::Europe__Bucharest,
+        "SRB" => Tz::Europe__Belgrade,
+        "RUS" => Tz::Europe__Moscow,
+        "SWE" => Tz::Europe__Stockholm,
+        "SVN" => Tz::Europe__Ljubljana,
+        "SVK" => Tz::Europe__Bratislava,
+        "SMR" => Tz::Europe__San_Marino,
+        "TUR" => Tz::Turkey,
+        "UKR" => Tz::Europe__Kiev,
+        _ => return None,
+    };
+
+    Some(tz)
 }
 
 #[cfg(test)]

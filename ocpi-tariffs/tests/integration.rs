@@ -16,8 +16,10 @@ fn test_json(cdr: &str, path: PathBuf) {
 }
 
 pub fn validate_cdr(cdr: &Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::Error> {
-    let pricer = Pricer::with_tariffs(cdr, &[tariff], Tz::UTC);
-    let report = pricer.build_report()?;
+    let report = Pricer::new(cdr)
+        .with_tariffs(&[tariff])
+        .with_time_zone(Tz::UTC)
+        .build_report()?;
 
     assert_eq!(
         cdr.total_cost,

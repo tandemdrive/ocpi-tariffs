@@ -141,10 +141,10 @@ impl TariffArgs {
             None
         };
 
-        let pricer = if let Some(tariff) = tariff.clone() {
-            Pricer::with_tariffs(&cdr, &[tariff], self.timezone)
-        } else {
-            Pricer::new(&cdr, self.timezone)
+        let mut pricer = Pricer::new(&cdr);
+
+        if let Some(tariff) = &tariff {
+            pricer = pricer.with_tariffs([tariff]);
         };
 
         let report = pricer.build_report().map_err(Error::Internal)?;

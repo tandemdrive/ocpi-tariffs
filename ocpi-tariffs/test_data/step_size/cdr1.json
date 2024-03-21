@@ -3,6 +3,9 @@
     "end_date_time": "2022-01-13T17:07:00Z",
     "currency": "EUR",
     "tariffs": [],
+    "cdr_location": { 
+        "country": "NLD"
+    },
     "charging_periods": [
         {
             "start_date_time": "2022-01-13T16:55:00Z",

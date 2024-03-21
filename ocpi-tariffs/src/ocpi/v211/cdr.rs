@@ -27,6 +27,9 @@ pub struct Cdr {
     #[serde(deserialize_with = "null_default", default)]
     pub tariffs: Vec<OcpiTariff>,
 
+    /// Describes the location that the charge-session took place at.
+    pub location: OcpiLocation,
+
     /// List of charging periods that make up this charging session> A session should consist of 1 or
     /// more periods, where each period has a different relevant Tariff.
     pub charging_periods: Vec<OcpiChargingPeriod>,
@@ -45,6 +48,15 @@ pub struct Cdr {
 
     /// Timestamp when this CDR was last updated
     pub last_updated: DateTime,
+}
+
+/// Describes the location that the charge-session took place at.
+#[derive(Clone, Deserialize, Serialize)]
+pub struct OcpiLocation {
+    /// ISO 3166-1 alpha-3 code for the country of this location.
+    pub country: String,
+    /// One of IANA tzdata's TZ-values representing the time zone of the location. Examples: "Europe/Oslo", "Europe/Zurich"
+    pub time_zone: Option<String>,
 }
 
 /// The volume that has been consumed for a specific dimension during a charging period.
@@ -96,6 +108,7 @@ impl From<Cdr> for v221::cdr::Cdr {
             end_date_time: cdr.stop_date_time,
             start_date_time: cdr.start_date_time,
             last_updated: cdr.last_updated,
+            cdr_location: cdr.location.into(),
             charging_periods: cdr
                 .charging_periods
                 .into_iter()
@@ -114,6 +127,15 @@ impl From<Cdr> for v221::cdr::Cdr {
             total_parking_time: cdr.total_parking_time,
             total_parking_cost: None,
             total_reservation_cost: None,
+        }
+    }
+}
+
+impl From<OcpiLocation> for v221::cdr::OcpiCdrLocation {
+    fn from(value: OcpiLocation) -> Self {
+        Self {
+            country: value.country,
+            time_zone: value.time_zone,
         }
     }
 }

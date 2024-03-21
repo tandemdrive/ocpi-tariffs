@@ -16,6 +16,9 @@ use crate::ocpi::v221;
 /// The Tariff object describes a tariff and its properties
 #[derive(Clone, Deserialize, Serialize)]
 pub struct OcpiTariff {
+    /// The OCPI id of this tariff.
+    pub id: String,
+
     /// Currency of this tariff, ISO 4217 Code
     pub currency: String,
 
@@ -112,6 +115,7 @@ pub struct OcpiTariffRestriction {
 impl From<OcpiTariff> for v221::tariff::OcpiTariff {
     fn from(tariff: OcpiTariff) -> Self {
         Self {
+            id: tariff.id,
             currency: tariff.currency,
             min_price: None,
             max_price: None,

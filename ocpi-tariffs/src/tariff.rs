@@ -8,29 +8,15 @@ use crate::restriction::{collect_restrictions, Restriction};
 use crate::session::ChargePeriod;
 use crate::types::{money::Money, time::DateTime};
 
-pub struct Tariffs(Vec<Tariff>);
-
-impl Tariffs {
-    pub fn new(tariffs: &[OcpiTariff]) -> Self {
-        Self(tariffs.iter().map(Tariff::new).collect())
-    }
-
-    pub fn active_tariff(&self, start_time: DateTime) -> Option<(usize, &Tariff)> {
-        self.0
-            .iter()
-            .position(|t| t.is_active(start_time))
-            .map(|i| (i, &self.0[i]))
-    }
-}
-
 pub struct Tariff {
+    pub id: String,
     elements: Vec<TariffElement>,
     start_date_time: Option<DateTime>,
     end_date_time: Option<DateTime>,
 }
 
 impl Tariff {
-    fn new(tariff: &OcpiTariff) -> Self {
+    pub fn new(tariff: &OcpiTariff) -> Self {
         let elements = tariff
             .elements
             .iter()
@@ -39,6 +25,7 @@ impl Tariff {
             .collect();
 
         Self {
+            id: tariff.id.clone(),
             start_date_time: tariff.start_date_time,
             end_date_time: tariff.end_date_time,
             elements,
