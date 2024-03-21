@@ -26,6 +26,9 @@ pub struct Cdr {
     #[serde(deserialize_with = "null_default", default)]
     pub tariffs: Vec<OcpiTariff>,
 
+    /// Describes the location that the charge-session took place at.
+    pub cdr_location: OcpiCdrLocation,
+
     /// List of charging periods that make up this charging session> A session should consist of 1 or
     /// more periods, where each period has a different relevant Tariff.
     pub charging_periods: Vec<OcpiChargingPeriod>,
@@ -59,6 +62,22 @@ pub struct Cdr {
 
     /// Timestamp when this CDR was last updated
     pub last_updated: DateTime,
+}
+
+/// Describes the location that the charge-session took place at.
+#[derive(Clone, Deserialize, Serialize)]
+pub struct OcpiCdrLocation {
+    /// ISO 3166-1 alpha-3 code for the country of this location.
+    pub country: String,
+    /// Optional time-zone information.
+    ///
+    /// NOTE: according to OCPI 2.2.1 the CDR location does not contain this field. It is added
+    /// here to allow to conversion from OCPI 2.1.1 locations without losing time-zone information.
+    ///
+    /// It will not be included when serializing the location in order to stay compliant to OCPI
+    /// 2.2.1.
+    #[serde(skip_serializing)]
+    pub time_zone: Option<String>,
 }
 
 /// The volume that has been consumed for a specific dimension during a charging period.

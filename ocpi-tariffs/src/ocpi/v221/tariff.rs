@@ -13,6 +13,9 @@ use crate::null_default;
 /// The Tariff object describes a tariff and its properties
 #[derive(Clone, Deserialize, Serialize)]
 pub struct OcpiTariff {
+    /// The OCPI id of this tariff.
+    pub id: String,
+
     /// Currency of this tariff, ISO 4217 Code
     pub currency: String,
 

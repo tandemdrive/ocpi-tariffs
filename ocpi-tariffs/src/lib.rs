@@ -30,9 +30,20 @@ pub enum Error {
     ///
     /// A valid tariff must have a start date time before the start of the session and a end date
     /// time after the start of the session.
+    ///
+    /// If the session does not contain any tariffs consider providing a list of tariffs using
+    /// [`pricer::Pricer::with_tariffs`].
     NoValidTariff,
     /// A numeric overflow occurred during tariff calculation.
     NumericOverflow,
+    /// The CDR location did not contain a time-zone. If time zone detection was enabled and this
+    /// error still occurs it means that the country specified in the CDR has multiple time-zones.
+    /// Consider explicitly using a time-zone using [`pricer::Pricer::with_time_zone`].
+    TimeZoneMissing,
+    /// The CDR location did not contain a valid time-zone. Consider enabling time-zone detection
+    /// as a fall back using [`pricer::Pricer::detect_time_zone`] or explicitly providing a time
+    /// zone using [`pricer::Pricer::with_time_zone`].
+    TimeZoneInvalid,
 }
 
 impl From<rust_decimal::Error> for Error {
@@ -48,6 +59,8 @@ impl fmt::Display for Error {
         let display = match self {
             Self::NoValidTariff => "No valid tariff has been found in the list of provided tariffs",
             Self::NumericOverflow => "A numeric overflow occurred during tariff calculation",
+            Self::TimeZoneMissing => "No time zone could be found in the session information",
+            Self::TimeZoneInvalid => "The time zone specified is invalid",
         };
 
         f.write_str(display)
