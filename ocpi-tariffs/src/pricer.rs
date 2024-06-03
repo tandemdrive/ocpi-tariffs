@@ -4,12 +4,12 @@ use crate::{
         tariff::{CompatibilityVat, OcpiTariff},
     },
     session::{ChargePeriod, ChargeSession, PeriodData},
-    tariff::{PriceComponent, PriceComponents, Tariffs},
+    tariff::{PriceComponent, PriceComponents, Tariff},
     types::{
         electricity::Kwh,
         money::{Money, Price},
         number::Number,
-        time::HoursDecimal,
+        time::{try_detect_time_zone, DateTime as OcpiDateTime, HoursDecimal},
     },
     Error, Result,
 };
@@ -24,46 +24,89 @@ use serde::Serialize;
 ///
 /// Either specify a `Cdr` containing a list of tariffs.
 /// ```ignore
-/// let pricer = Pricer::new(cdr, Tz::Europe__Amsterdam);
-/// let report = pricer.build_report();
+/// let report = Pricer::new(cdr)
+///                 .with_time_zone(Tz::Europe__Amsterdam)
+///                 .build_report()
+///                 .unwrap();
 /// ```
 ///
 /// Or provide both the `Cdr` and a slice of `OcpiTariff`'s.
 /// ```ignore
-/// let pricer = Pricer::with_tariffs(cdr, tariffs, Tz::Europe__Amsterdam);
-/// let report = pricer.build_report();
+/// let pricer = Pricer::new(cdr)
+///                 .with_tariffs(tariffs)
+///                 .detect_time_zone(true)
+///                 .build_report()
+///                 .unwrap();
 /// ```
-pub struct Pricer {
-    session: ChargeSession,
-    tariffs: Tariffs,
+pub struct Pricer<'a> {
+    cdr: &'a Cdr,
+    tariffs: Option<Vec<&'a OcpiTariff>>,
+    time_zone: Option<Tz>,
+    detect_time_zone: bool,
 }
 
-impl Pricer {
-    /// Instantiate the pricer with a `Cdr` that contains at least on tariff.
-    /// Provide the `local_timezone` of the area where this charge session was priced.
-    pub fn new(cdr: &Cdr, local_timezone: Tz) -> Self {
+impl<'a> Pricer<'a> {
+    /// Create a new pricer instance using the specified [`Cdr`].
+    pub fn new(cdr: &'a Cdr) -> Self {
         Self {
-            session: ChargeSession::new(cdr, local_timezone),
-            tariffs: Tariffs::new(&cdr.tariffs),
+            cdr,
+            time_zone: None,
+            detect_time_zone: false,
+            tariffs: None,
         }
     }
 
-    /// Instantiate the pricer with a `Cdr` and a slice that contains at least on tariff.
-    /// Provide the `local_timezone` of the area where this charge session was priced.
-    pub fn with_tariffs(cdr: &Cdr, tariffs: &[OcpiTariff], local_timezone: Tz) -> Self {
-        Self {
-            session: ChargeSession::new(cdr, local_timezone),
-            tariffs: Tariffs::new(tariffs),
-        }
+    /// Use a list of [`OcpiTariff`]'s for pricing instead of the tariffs found in the [`Cdr`].
+    pub fn with_tariffs(mut self, tariffs: impl IntoIterator<Item = &'a OcpiTariff>) -> Self {
+        self.tariffs = Some(tariffs.into_iter().collect());
+
+        self
     }
 
-    /// Attempt to apply the first found valid tariff the charge session and build a report
+    /// Directly specify a time zone to use for the calculation. This overrides any time zones in
+    /// the session or any detected time zones if [`Self::detect_time_zone`] is set to true.
+    pub fn with_time_zone(mut self, time_zone: Tz) -> Self {
+        self.time_zone = Some(time_zone);
+
+        self
+    }
+
+    /// Try to detect a time zone from the country code inside the [`Cdr`] if the actual time zone
+    /// is missing. The detection will only succeed if the country has just one time-zone,
+    /// nonetheless there are edge cases where the detection will be incorrect. Only use this
+    /// feature as a fallback when a certain degree of inaccuracy is allowed.
+    pub fn detect_time_zone(mut self, detect: bool) -> Self {
+        self.detect_time_zone = detect;
+
+        self
+    }
+
+    /// Attempt to apply the first applicable tariff to the charge session and build a report
     /// containing the results.
-    pub fn build_report(&self) -> Result<Report> {
-        let (tariff_index, tariff) = self
-            .tariffs
-            .active_tariff(self.session.start_date_time)
-            .ok_or(Error::NoValidTariff)?;
+    pub fn build_report(self) -> Result<Report> {
+        let cdr_tz = self.cdr.cdr_location.time_zone.as_ref();
+
+        let time_zone = if let Some(tz) = self.time_zone {
+            tz
+        } else if let Some(tz) = cdr_tz {
+            tz.parse().map_err(|_| Error::TimeZoneInvalid)?
+        } else if self.detect_time_zone {
+            try_detect_time_zone(&self.cdr.cdr_location.country).ok_or(Error::TimeZoneMissing)?
+        } else {
+            return Err(Error::TimeZoneMissing);
+        };
+
+        let cdr = ChargeSession::new(self.cdr, time_zone);
+
+        let active = if let Some(tariffs) = self.tariffs {
+            Self::first_active_tariff(tariffs, cdr.start_date_time)
+        } else if !self.cdr.tariffs.is_empty() {
+            Self::first_active_tariff(&self.cdr.tariffs, cdr.start_date_time)
+        } else {
+            None
+        };
+
+        let (tariff_index, tariff) = active.ok_or(Error::NoValidTariff)?;
 
         let mut periods = Vec::new();
         let mut step_size = StepSize::new();
@@ -72,7 +115,7 @@ impl Pricer {
         let mut total_charging_time = HoursDecimal::zero();
         let mut total_parking_time = HoursDecimal::zero();
 
-        for (index, period) in self.session.periods.iter().enumerate() {
+        for (index, period) in cdr.periods.iter().enumerate() {
             let components = tariff.active_components(period);
 
             step_size.update(index, &components, period);
@@ -173,6 +216,8 @@ impl Pricer {
         let report = Report {
             periods,
             tariff_index,
+            tariff_id: tariff.id,
+            time_zone: time_zone.to_string(),
             total_cost,
             total_time_cost,
             total_charging_time,
@@ -189,6 +234,16 @@ impl Pricer {
         };
 
         Ok(report)
+    }
+
+    fn first_active_tariff<'b>(
+        iter: impl IntoIterator<Item = &'b OcpiTariff>,
+        start_date_time: OcpiDateTime,
+    ) -> Option<(usize, Tariff)> {
+        iter.into_iter()
+            .map(Tariff::new)
+            .enumerate()
+            .find(|(_, t)| t.is_active(start_date_time))
     }
 }
 
@@ -334,6 +389,10 @@ pub struct Report {
     pub periods: Vec<PeriodReport>,
     /// Index of the tariff that was found to be active.
     pub tariff_index: usize,
+    /// Id of the tariff that was found to be active.
+    pub tariff_id: String,
+    /// Time zone that was either specified or detected.
+    pub time_zone: String,
     /// Total sum of all the costs of this transaction in the specified currency.
     pub total_cost: Option<Price>,
     /// Total sum of all the cost related to duration of charging during this transaction, in the specified currency.
