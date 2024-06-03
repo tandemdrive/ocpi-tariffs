@@ -9,7 +9,7 @@ use crate::{
         electricity::Kwh,
         money::{Money, Price},
         number::Number,
-        time::{try_detect_time_zone, HoursDecimal},
+        time::{try_detect_time_zone, DateTime as OcpiDateTime, HoursDecimal},
     },
     Error, Result,
 };
@@ -99,18 +99,9 @@ impl<'a> Pricer<'a> {
         let cdr = ChargeSession::new(self.cdr, time_zone);
 
         let active = if let Some(tariffs) = self.tariffs {
-            tariffs
-                .into_iter()
-                .map(Tariff::new)
-                .enumerate()
-                .find(|(_, t)| t.is_active(cdr.start_date_time))
+            Self::first_active_tariff(tariffs, cdr.start_date_time)
         } else if !self.cdr.tariffs.is_empty() {
-            self.cdr
-                .tariffs
-                .iter()
-                .map(Tariff::new)
-                .enumerate()
-                .find(|(_, t)| t.is_active(cdr.start_date_time))
+            Self::first_active_tariff(&self.cdr.tariffs, cdr.start_date_time)
         } else {
             None
         };
@@ -243,6 +234,16 @@ impl<'a> Pricer<'a> {
         };
 
         Ok(report)
+    }
+
+    fn first_active_tariff<'b>(
+        iter: impl IntoIterator<Item = &'b OcpiTariff>,
+        start_date_time: OcpiDateTime,
+    ) -> Option<(usize, Tariff)> {
+        iter.into_iter()
+            .map(Tariff::new)
+            .enumerate()
+            .find(|(_, t)| t.is_active(start_date_time))
     }
 }
 

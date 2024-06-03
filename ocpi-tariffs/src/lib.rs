@@ -60,7 +60,7 @@ impl fmt::Display for Error {
             Self::NoValidTariff => "No valid tariff has been found in the list of provided tariffs",
             Self::NumericOverflow => "A numeric overflow occurred during tariff calculation",
             Self::TimeZoneMissing => "No time zone could be found in the session information",
-            Self::TimeZoneInvalid => "The time zone specified is invalid",
+            Self::TimeZoneInvalid => "The time zone in the CDR is invalid",
         };
 
         f.write_str(display)
