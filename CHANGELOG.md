@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.6.0 2024-06-04
+
+- Upgrade dependencies.
+- Improved pricer interface.
+- Added time zone detection feature.
+
 ## 0.5.2 2024-03-12
 
 - Upgrade dependencies
