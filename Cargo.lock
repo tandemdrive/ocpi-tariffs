@@ -368,7 +368,7 @@ dependencies = [
 
 [[package]]
 name = "ocpi-tariffs"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -381,7 +381,7 @@ dependencies = [
 
 [[package]]
 name = "ocpi-tariffs-cli"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "chrono",
  "chrono-tz",
