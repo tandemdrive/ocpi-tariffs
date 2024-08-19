@@ -92,6 +92,24 @@ classDiagram
     TariffElement "1" --o "0..1" TariffRestriction
 ```
 
+## Interpretation
+
+This implementation aims to follow the OCPI specification as closely as 
+possible. However, as with any specification, details might be left open to 
+interpretation. The following is a list of assumptions that have been made in 
+this implementation:
+
+- We assume that a `FLAT` price component can only be active once in a session.
+  The first time a `FLAT` price component becomes active it will be used and 
+  subsequent active `FLAT` components will be ignored. Although this is not 
+  explicitly mentioned in the OCPI 2.*.* specs, we feel it is the correct 
+  interpretation.
+
+- We assume that the charging periods provided as input are well-formed. 
+  Meaning, each period in the session that has a different price must be 
+  provided as a separate charging period in the CDR. No attempt will be made
+  to subdivide or interpolate data inside a single provided period.
+
 ## Contributing
 
 We welcome community contributions to this project.

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- Fixed bug where multiple flat fees are generated during the session. Instead
+  we now only use the first time a flat fee becomes active.
+
 ## 0.6.0 2024-06-04
 
 - Upgrade dependencies.
