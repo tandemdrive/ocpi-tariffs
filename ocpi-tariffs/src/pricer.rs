@@ -115,8 +115,18 @@ impl<'a> Pricer<'a> {
         let mut total_charging_time = HoursDecimal::zero();
         let mut total_parking_time = HoursDecimal::zero();
 
+        let mut has_flat_fee = false;
+
         for (index, period) in cdr.periods.iter().enumerate() {
-            let components = tariff.active_components(period);
+            let mut components = tariff.active_components(period);
+
+            if components.flat.is_some() {
+                if has_flat_fee {
+                    components.flat = None;
+                } else {
+                    has_flat_fee = true;
+                }
+            }
 
             step_size.update(index, &components, period);
 
