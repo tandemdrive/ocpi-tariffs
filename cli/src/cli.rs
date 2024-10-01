@@ -91,8 +91,8 @@ pub struct TariffArgs {
     #[arg(short = 't', long)]
     tariff: Option<PathBuf>,
     /// Timezone for evaluating any local times contained in the tariff structure.
-    #[arg(short = 'z', long, default_value = "Europe/Amsterdam")]
-    timezone: Tz,
+    #[arg(short = 'z', long)]
+    timezone: Option<Tz>,
     /// The OCPI version that should be used for the input structures.
     ///
     /// If the input consists of version 2.1.1 structures they will be converted to 2.2.1
@@ -141,7 +141,11 @@ impl TariffArgs {
             None
         };
 
-        let mut pricer = Pricer::new(&cdr);
+        let mut pricer = Pricer::new(&cdr).detect_time_zone(true);
+
+        if let Some(timezone) = self.timezone {
+            pricer = pricer.with_time_zone(timezone);
+        }
 
         if let Some(tariff) = &tariff {
             pricer = pricer.with_tariffs([tariff]);
@@ -283,7 +287,7 @@ impl Validate {
             style("Validating").green().bold(),
             style(self.args.cdr_name()).blue(),
             style(self.args.tariff_name()).blue(),
-            style(self.args.timezone).blue(),
+            style(report.time_zone).blue(),
         );
 
         let mut table = ValidateTable { rows: Vec::new() };
@@ -380,12 +384,14 @@ impl Analyze {
     fn run(self) -> Result<()> {
         let (report, _, _) = self.args.load_all()?;
 
+        let tz = report.time_zone.parse().map_err(Error::other)?;
+
         println!(
             "\n{} `{}` with tariff `{}`, using timezone `{}`:",
             style("Analyzing").green().bold(),
             style(self.args.cdr_name()).blue(),
             style(self.args.tariff_name()).blue(),
-            style(self.args.timezone).blue(),
+            style(tz).blue(),
         );
 
         let mut energy: PeriodTable<Kwh> = PeriodTable::new("Energy");
@@ -394,7 +400,7 @@ impl Analyze {
         let mut flat: PeriodTable<UnitDisplay> = PeriodTable::new("Flat");
 
         for period in report.periods.iter() {
-            let start_time = period.start_date_time.with_timezone(&self.args.timezone);
+            let start_time = period.start_date_time.with_timezone(&tz);
 
             energy.row(&period.dimensions.energy, start_time);
             parking.row(&period.dimensions.parking_time, start_time);

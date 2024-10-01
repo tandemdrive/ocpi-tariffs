@@ -4,6 +4,7 @@ use crate::ocpi::tariff::{
     CompatibilityVat, OcpiPriceComponent, OcpiTariff, OcpiTariffElement, TariffDimensionType,
 };
 
+use crate::pricer::PeriodWarnings;
 use crate::restriction::{collect_restrictions, Restriction};
 use crate::session::ChargePeriod;
 use crate::types::{money::Money, time::DateTime};
@@ -32,11 +33,22 @@ impl Tariff {
         }
     }
 
-    pub fn active_components(&self, period: &ChargePeriod) -> PriceComponents {
+    pub fn active_components(
+        &self,
+        period: &ChargePeriod,
+        warnings: &mut PeriodWarnings,
+    ) -> PriceComponents {
         let mut components = PriceComponents::new();
 
         for tariff_element in self.elements.iter() {
-            if !tariff_element.is_active(period) {
+            let is_active_at_start = tariff_element.is_active(period);
+            let is_active_at_end = tariff_element.is_active_at_end(period);
+
+            if is_active_at_start != is_active_at_end {
+                warnings.partial_tariff_element_validity = true;
+            }
+
+            if !is_active_at_start {
                 continue;
             }
 
@@ -123,8 +135,6 @@ impl TariffElement {
         true
     }
 
-    // use this in the future to validate if a period is still valid when it ends.
-    #[allow(dead_code)]
     pub fn is_active_at_end(&self, period: &ChargePeriod) -> bool {
         for restriction in self.restrictions.iter() {
             if !restriction.instant_validity_inclusive(&period.end_instant) {

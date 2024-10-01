@@ -118,7 +118,9 @@ impl<'a> Pricer<'a> {
         let mut has_flat_fee = false;
 
         for (index, period) in cdr.periods.iter().enumerate() {
-            let mut components = tariff.active_components(period);
+            let mut warnings = PeriodWarnings::new();
+
+            let mut components = tariff.active_components(period, &mut warnings);
 
             if components.flat.is_some() {
                 if has_flat_fee {
@@ -145,7 +147,7 @@ impl<'a> Pricer<'a> {
                     .unwrap_or_else(HoursDecimal::zero),
             );
 
-            periods.push(PeriodReport::new(period, dimensions));
+            periods.push(PeriodReport::new(period, dimensions, warnings));
         }
 
         let billed_charging_time = step_size.apply_time(&mut periods, total_charging_time)?;
@@ -431,6 +433,20 @@ pub struct Report {
     pub total_reservation_cost: Option<Price>,
 }
 
+/// Contains any possible warnings that apply to a period.
+#[derive(Serialize, Default)]
+pub struct PeriodWarnings {
+    /// The period was not correctly subdivided which caused a tariff element to be active during a
+    /// a part of the period and not active during another part of the period.
+    pub partial_tariff_element_validity: bool,
+}
+
+impl PeriodWarnings {
+    fn new() -> Self {
+        Self::default()
+    }
+}
+
 /// A report for a single period that occurred during a session.
 #[derive(Serialize)]
 pub struct PeriodReport {
@@ -440,14 +456,17 @@ pub struct PeriodReport {
     pub end_date_time: DateTime<Utc>,
     /// A structure that contains results per dimension.
     pub dimensions: Dimensions,
+    /// Shows any possible warnings that apply to this period.
+    pub warnings: PeriodWarnings,
 }
 
 impl PeriodReport {
-    fn new(period: &ChargePeriod, dimensions: Dimensions) -> Self {
+    fn new(period: &ChargePeriod, dimensions: Dimensions, warnings: PeriodWarnings) -> Self {
         Self {
             start_date_time: period.start_instant.date_time,
             end_date_time: period.end_instant.date_time,
             dimensions,
+            warnings,
         }
     }
 

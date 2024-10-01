@@ -9,9 +9,10 @@ pub enum Error {
     Deserialize {
         path: String,
         kind: &'static str,
-        error: std::io::Error,
+        error: io::Error,
     },
     Internal(ocpi_tariffs::Error),
+    Other(Box<dyn std::error::Error>),
 }
 impl std::error::Error for Error {}
 
@@ -25,6 +26,7 @@ impl fmt::Display for Error {
                 format!("Could not deserialize {kind} from `{path}`: {error}")
             }
             Self::Internal(e) => format!("{e}"),
+            Self::Other(e) => format!("{e}"),
         };
 
         f.write_str(&s)
@@ -36,10 +38,17 @@ impl Error {
         Self::File { path, error }
     }
 
+    pub fn other<E>(err: E) -> Self
+    where
+        E: Into<Box<dyn std::error::Error>>,
+    {
+        Self::Other(err.into())
+    }
+
     pub fn deserialize(
         path: impl fmt::Display,
         kind: &'static str,
-        error: impl Into<std::io::Error>,
+        error: impl Into<io::Error>,
     ) -> Self {
         Self::Deserialize {
             path: path.to_string(),
