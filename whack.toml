@@ -1,5 +1,0 @@
-worker_dependencies = ["rust"]
-
-[scripts]
-run_tests = "scripts/ci.sh"
-clean_build = "scripts/clean_build.sh"
