@@ -1,9 +1,6 @@
 [advisories]
-vulnerability = "deny"
-unmaintained = "deny"
-notice = "deny"
-unsound = "deny"
-ignore = []
+version = 2
+yanked = "warn"
 
 [bans]
 multiple-versions = "allow"
@@ -22,13 +19,10 @@ allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 allow-git = []
 
 [licenses]
-unlicensed = "deny"
-allow-osi-fsf-free = "neither"
-copyleft = "deny"
 # We want really high confidence when inferring licenses from text
 confidence-threshold = 0.93
 # (extending this list is only allowed after agreement by TD management)
-allow = ["Apache-2.0", "Apache-2.0 WITH LLVM-exception", "MIT"]
+allow = ["Apache-2.0", "MIT"]
 
 # ignore the local workspace crates
 [licenses.private]
