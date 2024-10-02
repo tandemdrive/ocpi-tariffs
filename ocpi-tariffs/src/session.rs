@@ -169,7 +169,7 @@ impl PeriodData {
             energy: None,
         };
 
-        for dimension in period.dimensions.iter() {
+        for dimension in &period.dimensions {
             match *dimension {
                 OcpiCdrDimension::MinCurrent(volume) => inst.min_current = Some(volume),
                 OcpiCdrDimension::MaxCurrent(volume) => inst.max_current = Some(volume),

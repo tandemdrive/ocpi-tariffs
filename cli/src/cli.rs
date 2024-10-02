@@ -393,7 +393,7 @@ impl Analyze {
         let mut time: PeriodTable<HoursDecimal> = PeriodTable::new("Charging Time");
         let mut flat: PeriodTable<UnitDisplay> = PeriodTable::new("Flat");
 
-        for period in report.periods.iter() {
+        for period in &report.periods {
             let start_time = period.start_date_time.with_timezone(&self.args.timezone);
 
             energy.row(&period.dimensions.energy, start_time);
@@ -523,7 +523,7 @@ impl Display for UnitDisplay {
 }
 
 impl From<()> for UnitDisplay {
-    fn from(_: ()) -> Self {
+    fn from((): ()) -> Self {
         UnitDisplay
     }
 }

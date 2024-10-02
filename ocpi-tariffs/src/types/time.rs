@@ -46,7 +46,7 @@ impl Display for HoursDecimal {
         let minutes = (duration.num_seconds() / SECS_IN_MIN) % MINS_IN_HOUR;
         let hours = duration.num_seconds() / (SECS_IN_MIN * MINS_IN_HOUR);
 
-        write!(f, "{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds)
+        write!(f, "{hours:0>2}:{minutes:0>2}:{seconds:0>2}")
     }
 }
 
@@ -74,7 +74,7 @@ impl HoursDecimal {
     }
 
     /// Convert into decimal representation.
-    pub fn as_num_hours_decimal(&self) -> rust_decimal::Decimal {
+    #[must_use] pub fn as_num_hours_decimal(&self) -> rust_decimal::Decimal {
         self.as_num_hours_number().into()
     }
 

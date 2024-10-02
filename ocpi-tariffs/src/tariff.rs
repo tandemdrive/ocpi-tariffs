@@ -35,7 +35,7 @@ impl Tariff {
     pub fn active_components(&self, period: &ChargePeriod) -> PriceComponents {
         let mut components = PriceComponents::new();
 
-        for tariff_element in self.elements.iter() {
+        for tariff_element in &self.elements {
             if !tariff_element.is_active(period) {
                 continue;
             }
@@ -90,7 +90,7 @@ impl TariffElement {
 
         let mut components = PriceComponents::new();
 
-        for ocpi_component in ocpi_element.price_components.iter() {
+        for ocpi_component in &ocpi_element.price_components {
             let price_component = PriceComponent::new(ocpi_component, element_index);
 
             match ocpi_component.component_type {
@@ -110,7 +110,7 @@ impl TariffElement {
     }
 
     pub fn is_active(&self, period: &ChargePeriod) -> bool {
-        for restriction in self.restrictions.iter() {
+        for restriction in &self.restrictions {
             if !restriction.instant_validity_exclusive(&period.start_instant) {
                 return false;
             }
@@ -126,7 +126,7 @@ impl TariffElement {
     // use this in the future to validate if a period is still valid when it ends.
     #[allow(dead_code)]
     pub fn is_active_at_end(&self, period: &ChargePeriod) -> bool {
-        for restriction in self.restrictions.iter() {
+        for restriction in &self.restrictions {
             if !restriction.instant_validity_inclusive(&period.end_instant) {
                 return false;
             }

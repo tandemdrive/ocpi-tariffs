@@ -47,7 +47,7 @@ pub struct Pricer<'a> {
 
 impl<'a> Pricer<'a> {
     /// Create a new pricer instance using the specified [`Cdr`].
-    pub fn new(cdr: &'a Cdr) -> Self {
+    #[must_use] pub fn new(cdr: &'a Cdr) -> Self {
         Self {
             cdr,
             time_zone: None,
@@ -65,7 +65,7 @@ impl<'a> Pricer<'a> {
 
     /// Directly specify a time zone to use for the calculation. This overrides any time zones in
     /// the session or any detected time zones if [`Self::detect_time_zone`] is set to true.
-    pub fn with_time_zone(mut self, time_zone: Tz) -> Self {
+    #[must_use] pub fn with_time_zone(mut self, time_zone: Tz) -> Self {
         self.time_zone = Some(time_zone);
 
         self
@@ -75,7 +75,7 @@ impl<'a> Pricer<'a> {
     /// is missing. The detection will only succeed if the country has just one time-zone,
     /// nonetheless there are edge cases where the detection will be incorrect. Only use this
     /// feature as a fallback when a certain degree of inaccuracy is allowed.
-    pub fn detect_time_zone(mut self, detect: bool) -> Self {
+    #[must_use] pub fn detect_time_zone(mut self, detect: bool) -> Self {
         self.detect_time_zone = detect;
 
         self
@@ -452,7 +452,7 @@ impl PeriodReport {
     }
 
     /// The total cost of all dimensions in this period.
-    pub fn cost(&self) -> Option<Price> {
+    #[must_use] pub fn cost(&self) -> Option<Price> {
         [
             self.dimensions.time.cost(),
             self.dimensions.parking_time.cost(),
