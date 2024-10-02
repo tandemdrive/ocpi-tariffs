@@ -16,7 +16,7 @@ serde_json = { version = "1.0.117", default-features = false }
 serde = { version = "1.0.203", features = ["derive"] }
 
 # use only "allow" and "warn" for lints (both rustc and clippy)
-# the Githud CI task will fail on warnings but
+# the Github CI task will fail on warnings but
 # we only want the warnings during local development
 [workspace.lints.rust]
 # Lint groups are set to warn so new lints are used as they become available
