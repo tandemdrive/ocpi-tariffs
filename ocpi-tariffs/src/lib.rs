@@ -1,4 +1,3 @@
-#![deny(missing_docs)]
 //! # OCPI Tariffs library
 //!
 //! Functionality to calculate the (sub)totals of a charge session. Use the

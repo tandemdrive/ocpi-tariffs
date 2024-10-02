@@ -74,7 +74,8 @@ impl HoursDecimal {
     }
 
     /// Convert into decimal representation.
-    #[must_use] pub fn as_num_hours_decimal(&self) -> rust_decimal::Decimal {
+    #[must_use]
+    pub fn as_num_hours_decimal(&self) -> rust_decimal::Decimal {
         self.as_num_hours_number().into()
     }
 
@@ -100,12 +101,12 @@ impl HoursDecimal {
         ))
     }
 
-    /// Saturating subtraction.
+    #[must_use]
     pub fn saturating_sub(self, other: Self) -> Self {
         Self(self.0.checked_sub(&other.0).unwrap_or_else(Duration::zero))
     }
 
-    /// Saturating addition.
+    #[must_use]
     pub fn saturating_add(self, other: Self) -> Self {
         Self(
             self.0

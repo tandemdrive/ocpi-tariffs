@@ -26,6 +26,7 @@ impl Price {
     }
 
     /// Round this number to the OCPI specified amount of decimals.
+    #[must_use]
     pub fn with_scale(self) -> Self {
         Self {
             excl_vat: self.excl_vat.with_scale(),
@@ -34,7 +35,8 @@ impl Price {
     }
 
     /// Saturating addition.
-    #[must_use] pub fn saturating_add(self, rhs: Self) -> Self {
+    #[must_use]
+    pub fn saturating_add(self, rhs: Self) -> Self {
         Self {
             excl_vat: self.excl_vat.saturating_add(rhs.excl_vat),
             incl_vat: match (self.incl_vat, rhs.incl_vat) {
@@ -64,37 +66,44 @@ impl Money {
     }
 
     /// Round this number to the OCPI specified amount of decimals.
-    #[must_use] pub fn with_scale(self) -> Self {
+    #[must_use]
+    pub fn with_scale(self) -> Self {
         Self(self.0.with_scale())
     }
 
     /// Saturating addition
-    #[must_use] pub fn saturating_add(self, other: Self) -> Self {
+    #[must_use]
+    pub fn saturating_add(self, other: Self) -> Self {
         Self(self.0.saturating_add(other.0))
     }
 
     /// Saturating subtraction
-    #[must_use] pub fn saturating_sub(self, other: Self) -> Self {
+    #[must_use]
+    pub fn saturating_sub(self, other: Self) -> Self {
         Self(self.0.saturating_sub(other.0))
     }
 
     /// Saturating multiplication
-    #[must_use] pub fn saturating_mul(self, other: Self) -> Self {
+    #[must_use]
+    pub fn saturating_mul(self, other: Self) -> Self {
         Self(self.0.saturating_mul(other.0))
     }
 
     /// Apply a VAT percentage to this monetary amount.
-    #[must_use] pub fn apply_vat(self, vat: Vat) -> Self {
+    #[must_use]
+    pub fn apply_vat(self, vat: Vat) -> Self {
         Self(self.0.saturating_mul(vat.as_fraction()))
     }
 
     /// Cost of a certain amount of [`Kwh`] with this price.
-    #[must_use] pub fn kwh_cost(self, kwh: Kwh) -> Self {
+    #[must_use]
+    pub fn kwh_cost(self, kwh: Kwh) -> Self {
         Self(self.0.saturating_mul(kwh.into()))
     }
 
     /// Cost of a certain amount of [`HoursDecimal`] with this price.
-    #[must_use] pub fn time_cost(self, hours: HoursDecimal) -> Self {
+    #[must_use]
+    pub fn time_cost(self, hours: HoursDecimal) -> Self {
         Self(self.0.saturating_mul(hours.as_num_hours_number()))
     }
 }

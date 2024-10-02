@@ -47,7 +47,8 @@ pub struct Pricer<'a> {
 
 impl<'a> Pricer<'a> {
     /// Create a new pricer instance using the specified [`Cdr`].
-    #[must_use] pub fn new(cdr: &'a Cdr) -> Self {
+    #[must_use]
+    pub fn new(cdr: &'a Cdr) -> Self {
         Self {
             cdr,
             time_zone: None,
@@ -57,6 +58,7 @@ impl<'a> Pricer<'a> {
     }
 
     /// Use a list of [`OcpiTariff`]'s for pricing instead of the tariffs found in the [`Cdr`].
+    #[must_use]
     pub fn with_tariffs(mut self, tariffs: impl IntoIterator<Item = &'a OcpiTariff>) -> Self {
         self.tariffs = Some(tariffs.into_iter().collect());
 
@@ -65,7 +67,8 @@ impl<'a> Pricer<'a> {
 
     /// Directly specify a time zone to use for the calculation. This overrides any time zones in
     /// the session or any detected time zones if [`Self::detect_time_zone`] is set to true.
-    #[must_use] pub fn with_time_zone(mut self, time_zone: Tz) -> Self {
+    #[must_use]
+    pub fn with_time_zone(mut self, time_zone: Tz) -> Self {
         self.time_zone = Some(time_zone);
 
         self
@@ -75,7 +78,8 @@ impl<'a> Pricer<'a> {
     /// is missing. The detection will only succeed if the country has just one time-zone,
     /// nonetheless there are edge cases where the detection will be incorrect. Only use this
     /// feature as a fallback when a certain degree of inaccuracy is allowed.
-    #[must_use] pub fn detect_time_zone(mut self, detect: bool) -> Self {
+    #[must_use]
+    pub fn detect_time_zone(mut self, detect: bool) -> Self {
         self.detect_time_zone = detect;
 
         self
@@ -83,6 +87,7 @@ impl<'a> Pricer<'a> {
 
     /// Attempt to apply the first applicable tariff to the charge session and build a report
     /// containing the results.
+    #[allow(clippy::too_many_lines)]
     pub fn build_report(self) -> Result<Report> {
         let cdr_tz = self.cdr.cdr_location.time_zone.as_ref();
 
@@ -452,7 +457,8 @@ impl PeriodReport {
     }
 
     /// The total cost of all dimensions in this period.
-    #[must_use] pub fn cost(&self) -> Option<Price> {
+    #[must_use]
+    pub fn cost(&self) -> Option<Price> {
         [
             self.dimensions.time.cost(),
             self.dimensions.parking_time.cost(),

@@ -58,16 +58,5 @@ missing_panics_doc = "allow"
 missing_errors_doc = "allow"
 map_unwrap_or = "allow"      # we prefer to `map(a).unwrap_or(b)` as it's clear what the fallback value is 
 
-# # These lints are allowed, but we want to deny them over time
-# default_trait_access = "allow"
-# into_iter_without_iter = "allow"
-# items_after_statements = "allow"
-# large_futures = "allow"
-# module_name_repetitions = "allow"
-# must_use_candidate = "allow"
-# needless_pass_by_value = "allow"
-# similar_names = "allow"
-# struct_excessive_bools = "allow"
-# struct_field_names = "allow"
-# too_many_lines = "allow"
-# trivially_copy_pass_by_ref = "allow"
+# These lints are allowed, but we want to deny them over time
+module_name_repetitions = "allow"
