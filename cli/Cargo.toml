@@ -20,3 +20,6 @@ ocpi-tariffs = { version = "0.6.1", path = "../ocpi-tariffs", features = ["ocpi-
 serde_json.workspace = true
 serde.workspace = true
 tabled = { version = "0.15.0" }
+
+[lints]
+workspace = true
