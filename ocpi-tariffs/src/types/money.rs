@@ -11,7 +11,7 @@ pub struct Price {
     #[serde(default)]
     /// The price including VAT.
     ///
-    /// If no vat is applicable this value will be equal to the excl_vat.
+    /// If no vat is applicable this value will be equal to the `excl_vat`.
     ///
     /// If no vat could be determined (tariff is 2.1.1) this value will be `None`.
     pub incl_vat: Option<Money>,
