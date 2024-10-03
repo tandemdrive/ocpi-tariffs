@@ -74,8 +74,8 @@ pub struct TariffArgs {
     #[arg(short = 't', long)]
     tariff: Option<PathBuf>,
     /// Timezone for evaluating any local times contained in the tariff structure.
-    #[arg(short = 'z', long, default_value = "Europe/Amsterdam")]
-    timezone: Tz,
+    #[arg(short = 'z', long, alias = "tz")]
+    timezone: Option<Tz>,
     /// The OCPI version that should be used for the input structures.
     ///
     /// If the input consists of version 2.1.1 structures they will be converted to 2.2.1
@@ -129,6 +129,10 @@ impl TariffArgs {
         if let Some(tariff) = &tariff {
             pricer = pricer.with_tariffs([tariff]);
         };
+
+        if let Some(time_zone) = self.timezone {
+            pricer = pricer.with_time_zone(time_zone);
+        }
 
         let report = pricer.build_report().map_err(Error::Internal)?;
 
@@ -238,13 +242,13 @@ impl Validate {
 
         table.row(&[
             "Total Time Cost (Excl.)".into(),
-            to_string_or_default(report.total_time_cost.map(|p| p.excl_vat)),
+            to_string_or_default(report.total_time_cost.map(|p| p.with_scale().excl_vat)),
             to_string_or_default(cdr.total_time_cost.map(|p| p.excl_vat)),
         ]);
 
         table.row(&[
             "Total Time Cost (Incl.)".into(),
-            to_string_or_default(report.total_time_cost.and_then(|p| p.incl_vat)),
+            to_string_or_default(report.total_time_cost.and_then(|p| p.with_scale().incl_vat)),
             to_string_or_default(cdr.total_time_cost.and_then(|p| p.incl_vat)),
         ]);
 
@@ -345,8 +349,10 @@ impl Analyze {
             style("Analyzing").green().bold(),
             style(self.args.cdr_name()).blue(),
             style(self.args.tariff_name()).blue(),
-            style(self.args.timezone).blue(),
+            style(&report.time_zone).blue(),
         );
+
+        let time_zone: Tz = report.time_zone.parse().expect("invalid time zone");
 
         let mut table = Table::new();
 
@@ -360,7 +366,7 @@ impl Analyze {
         ]);
 
         for period in report.periods.iter() {
-            let start_time = period.start_date_time.with_timezone(&self.args.timezone);
+            let start_time = period.start_date_time.with_timezone(&time_zone);
             let dim = &period.dimensions;
 
             table.row(&[
