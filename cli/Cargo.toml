@@ -19,4 +19,3 @@ console = { version = "0.15.8" }
 ocpi-tariffs = { version = "0.6.1", path = "../ocpi-tariffs", features = ["ocpi-v211"] }
 serde_json.workspace = true
 serde.workspace = true
-tabled = { version = "0.15.0" }

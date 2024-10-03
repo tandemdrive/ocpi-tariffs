@@ -1,5 +1,5 @@
-use ocpi_tariffs_cli::run;
+use clap::Parser;
 
 fn main() {
-    run();
+    ocpi_tariffs_cli::Cli::parse().run();
 }

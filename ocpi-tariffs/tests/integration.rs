@@ -3,10 +3,10 @@ use ocpi_tariffs::{
     ocpi::{cdr::Cdr, tariff::OcpiTariff},
     pricer::Pricer,
 };
-use std::path::PathBuf;
+use std::path::Path;
 
 #[test_each::file(glob = "ocpi-tariffs/test_data/*/cdr*.json", name(segments = 2))]
-fn test_json(cdr: &str, path: PathBuf) {
+fn test_json(cdr: &str, path: &Path) {
     let tariff = std::fs::read_to_string(path.parent().unwrap().join("tariff.json")).unwrap();
 
     let cdr = serde_json::from_str(cdr).unwrap();

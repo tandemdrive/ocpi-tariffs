@@ -3,36 +3,19 @@ use std::{
     fmt::Display,
     fs::File,
     io::{stdin, Read},
+    iter,
     path::PathBuf,
     process::exit,
 };
 
-use chrono::DateTime;
 use chrono_tz::Tz;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use console::style;
 use serde::de::DeserializeOwned;
-use tabled::{
-    settings::{
-        object::{Rows, Segment},
-        width::MinWidth,
-        Alignment, Format, Modify, Panel, Style,
-    },
-    Table, Tabled,
-};
 
 use ocpi_tariffs::{
-    ocpi::{
-        cdr::Cdr,
-        tariff::{CompatibilityVat, OcpiTariff},
-        v211,
-    },
-    pricer::{Dimension, DimensionReport, Pricer, Report},
-    types::{
-        electricity::Kwh,
-        money::{Money, Price},
-        time::HoursDecimal,
-    },
+    ocpi::{cdr::Cdr, tariff::OcpiTariff, v211},
+    pricer::{Pricer, Report},
 };
 
 use crate::{error::Error, Result};
@@ -141,7 +124,7 @@ impl TariffArgs {
             None
         };
 
-        let mut pricer = Pricer::new(&cdr);
+        let mut pricer = Pricer::new(&cdr).detect_time_zone(true);
 
         if let Some(tariff) = &tariff {
             pricer = pricer.with_tariffs([tariff]);
@@ -192,88 +175,6 @@ pub struct Validate {
     args: TariffArgs,
 }
 
-#[derive(Tabled)]
-struct ValidateRow {
-    #[tabled(rename = "Property")]
-    property: String,
-    #[tabled(rename = "Calculated")]
-    calculated: String,
-    #[tabled(rename = "CDR")]
-    cdr: String,
-    #[tabled(rename = "Validity")]
-    validity: Validity,
-}
-
-#[derive(Clone, Copy)]
-pub enum Validity {
-    Valid,
-    Invalid,
-    Unknown,
-}
-
-impl Display for Validity {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match self {
-            Self::Valid => "valid",
-            Self::Invalid => "invalid",
-            Self::Unknown => "unknown",
-        })
-    }
-}
-
-struct ValidateTable {
-    rows: Vec<ValidateRow>,
-}
-
-impl ValidateTable {
-    pub fn row<T: Display + Eq + Default + Clone>(
-        &mut self,
-        report: Option<T>,
-        cdr: Option<T>,
-        name: &str,
-    ) {
-        let validity = if let (Some(cdr), Some(report)) = (&cdr, &report) {
-            if cdr == report {
-                Validity::Valid
-            } else {
-                Validity::Invalid
-            }
-        } else {
-            Validity::Unknown
-        };
-
-        let row = ValidateRow {
-            property: name.to_string(),
-            calculated: report
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| "<missing>".into()),
-            cdr: cdr
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| "<missing>".into()),
-            validity,
-        };
-
-        self.rows.push(row);
-    }
-
-    pub fn price_row(&mut self, report: Price, cdr: Option<Price>, name: &str) {
-        self.row(
-            Some(report.excl_vat),
-            cdr.map(|s| s.excl_vat),
-            &format!("{name} excl. VAT"),
-        );
-        self.row(
-            report.incl_vat,
-            cdr.and_then(|s| s.incl_vat),
-            &format!("{name} incl. VAT"),
-        );
-    }
-
-    pub fn valid_rows(&self) -> Vec<Validity> {
-        self.rows.iter().map(|r| r.validity).collect()
-    }
-}
-
 impl Validate {
     fn run(self) -> Result<()> {
         let (report, cdr, _) = self.args.load_all()?;
@@ -286,73 +187,132 @@ impl Validate {
             style(self.args.timezone).blue(),
         );
 
-        let mut table = ValidateTable { rows: Vec::new() };
+        let mut table = Table::new();
+        let mut is_valid = false;
 
-        table.row(Some(report.total_time), Some(cdr.total_time), "Total Time");
-        table.row(
-            Some(report.total_parking_time),
-            cdr.total_parking_time,
-            "Total Parking time",
-        );
-        table.row(
-            Some(report.total_energy.with_scale()),
-            Some(cdr.total_energy),
-            "Total Energy",
-        );
+        table.header(&["Property", "Report", "Cdr"]);
 
-        table.price_row(
-            report.total_cost.unwrap_or_default().with_scale(),
-            Some(cdr.total_cost),
-            "Total Cost",
-        );
+        table.row(&[
+            "Total Time".into(),
+            report.total_time.to_string(),
+            cdr.total_time.to_string(),
+        ]);
 
-        table.price_row(
-            report.total_time_cost.unwrap_or_default().with_scale(),
-            cdr.total_time_cost,
-            "Total Time cost",
-        );
-        table.price_row(
-            report.total_fixed_cost.unwrap_or_default().with_scale(),
-            cdr.total_fixed_cost,
-            "Total Fixed cost",
-        );
-        table.price_row(
-            report.total_energy_cost.unwrap_or_default().with_scale(),
-            cdr.total_energy_cost,
-            "Total Energy cost",
-        );
-        table.price_row(
-            report.total_parking_cost.unwrap_or_default().with_scale(),
-            cdr.total_parking_cost,
-            "Total Parking cost",
-        );
+        is_valid &= report.total_time == cdr.total_time;
 
-        let valid = table.valid_rows();
-        let is_invalid = valid.iter().any(|&s| matches!(s, Validity::Invalid));
+        table.row(&[
+            "Total Parking Time".into(),
+            report.total_parking_time.to_string(),
+            to_string_or_default(cdr.total_parking_time),
+        ]);
 
-        let format_valid = Modify::new(Rows::new(..)).with(Format::positioned(|row, (i, _)| {
-            let row = style(row);
-            if i == 0 {
-                row.bold().to_string()
-            } else if let Some(valid) = valid.get(i - 1) {
-                match valid {
-                    Validity::Valid => row.green().to_string(),
-                    Validity::Unknown => row.yellow().to_string(),
-                    Validity::Invalid => row.red().to_string(),
-                }
-            } else {
-                row.to_string()
-            }
-        }));
+        is_valid &= cdr
+            .total_parking_time
+            .map(|c| c == report.total_parking_time)
+            .unwrap_or(true);
 
-        println!(
-            "{}",
-            Table::new(table.rows)
-                .with(Style::modern())
-                .with(format_valid)
-        );
+        table.row(&[
+            "Total Energy".into(),
+            report.total_energy.with_scale().to_string(),
+            cdr.total_energy.to_string(),
+        ]);
 
-        if is_invalid {
+        is_valid &= report.total_energy == cdr.total_energy;
+
+        table.row(&[
+            "Total Cost (Excl.)".into(),
+            to_string_or_default(report.total_cost.map(|p| p.excl_vat)),
+            cdr.total_cost.with_scale().excl_vat.to_string(),
+        ]);
+
+        table.row(&[
+            "Total Cost (Incl.)".into(),
+            to_string_or_default(report.total_cost.and_then(|p| p.incl_vat)),
+            to_string_or_default(cdr.total_cost.incl_vat),
+        ]);
+
+        is_valid &= report
+            .total_cost
+            .map(|p| p == cdr.total_cost)
+            .unwrap_or(true);
+
+        table.row(&[
+            "Total Time Cost (Excl.)".into(),
+            to_string_or_default(report.total_time_cost.map(|p| p.excl_vat)),
+            to_string_or_default(cdr.total_time_cost.map(|p| p.excl_vat)),
+        ]);
+
+        table.row(&[
+            "Total Time Cost (Incl.)".into(),
+            to_string_or_default(report.total_time_cost.and_then(|p| p.incl_vat)),
+            to_string_or_default(cdr.total_time_cost.and_then(|p| p.incl_vat)),
+        ]);
+
+        is_valid &= report
+            .total_time_cost
+            .zip(cdr.total_time_cost)
+            .map(|(l, r)| l == r)
+            .unwrap_or(true);
+
+        table.row(&[
+            "Total Fixed Cost (Excl.)".into(),
+            to_string_or_default(report.total_fixed_cost.map(|p| p.excl_vat)),
+            to_string_or_default(cdr.total_fixed_cost.map(|p| p.excl_vat)),
+        ]);
+
+        table.row(&[
+            "Total Fixed Cost (Incl.)".into(),
+            to_string_or_default(report.total_fixed_cost.and_then(|p| p.incl_vat)),
+            to_string_or_default(cdr.total_fixed_cost.and_then(|p| p.incl_vat)),
+        ]);
+
+        is_valid &= report
+            .total_fixed_cost
+            .zip(cdr.total_fixed_cost)
+            .map(|(l, r)| l == r)
+            .unwrap_or(true);
+
+        table.row(&[
+            "Total Energy Cost (Excl.)".into(),
+            to_string_or_default(report.total_energy_cost.map(|p| p.excl_vat)),
+            to_string_or_default(cdr.total_energy_cost.map(|p| p.excl_vat)),
+        ]);
+
+        table.row(&[
+            "Total Energy Cost (Incl.)".into(),
+            to_string_or_default(report.total_energy_cost.and_then(|p| p.incl_vat)),
+            to_string_or_default(cdr.total_energy_cost.and_then(|p| p.incl_vat)),
+        ]);
+
+        is_valid &= report
+            .total_energy_cost
+            .zip(cdr.total_energy_cost)
+            .map(|(l, r)| l == r)
+            .unwrap_or(true);
+
+        table.row(&[
+            "Total Parking Cost (Excl.)".into(),
+            to_string_or_default(report.total_parking_cost.map(|p| p.excl_vat)),
+            to_string_or_default(cdr.total_parking_cost.map(|p| p.excl_vat)),
+        ]);
+
+        table.row(&[
+            "Total Parking Cost (Incl.)".into(),
+            to_string_or_default(report.total_parking_cost.and_then(|p| p.incl_vat)),
+            to_string_or_default(cdr.total_parking_cost.and_then(|p| p.incl_vat)),
+        ]);
+
+        is_valid &= report
+            .total_parking_cost
+            .zip(cdr.total_parking_cost)
+            .map(|(l, r)| l == r)
+            .unwrap_or(true);
+
+        table.retain_rows(|v| !v[1].is_empty() || !v[2].is_empty());
+
+        println!("{}", table);
+
+        if !is_valid {
             println!(
                 "Calculation {} all totals in the CDR.\n",
                 style("does not match").red().bold()
@@ -388,142 +348,171 @@ impl Analyze {
             style(self.args.timezone).blue(),
         );
 
-        let mut energy: PeriodTable<Kwh> = PeriodTable::new("Energy");
-        let mut parking: PeriodTable<HoursDecimal> = PeriodTable::new("Parking time");
-        let mut time: PeriodTable<HoursDecimal> = PeriodTable::new("Charging Time");
-        let mut flat: PeriodTable<UnitDisplay> = PeriodTable::new("Flat");
+        let mut table = Table::new();
+
+        table.header(&[
+            "Period",
+            "",
+            "Energy",
+            "Charging Time",
+            "Parking Time",
+            "Flat",
+        ]);
 
         for period in report.periods.iter() {
             let start_time = period.start_date_time.with_timezone(&self.args.timezone);
+            let dim = &period.dimensions;
 
-            energy.row(&period.dimensions.energy, start_time);
-            parking.row(&period.dimensions.parking_time, start_time);
-            time.row(&period.dimensions.time, start_time);
-            flat.row(&period.dimensions.flat, start_time);
+            table.row(&[
+                start_time.to_string(),
+                "Volume".to_string(),
+                to_string_or_default(dim.energy.volume),
+                to_string_or_default(dim.time.volume),
+                to_string_or_default(dim.parking_time.volume),
+                dim.flat.price.map(|_| "x".to_string()).unwrap_or_default(),
+            ]);
+
+            table.row(&[
+                "".to_string(),
+                "Price".to_string(),
+                to_string_or_default(dim.energy.price.map(|p| p.price)),
+                to_string_or_default(dim.time.price.map(|p| p.price)),
+                to_string_or_default(dim.parking_time.price.map(|p| p.price)),
+                to_string_or_default(dim.flat.price.map(|p| p.price)),
+            ]);
         }
 
-        println!("{}", energy.into_table());
-        println!("{}", parking.into_table());
-        println!("{}", time.into_table());
-        println!("{}", flat.into_table());
+        table.line();
+
+        table.row(&[
+            "Total".to_string(),
+            "Volume".to_string(),
+            report.total_energy.to_string(),
+            report.total_time.to_string(),
+            report.total_parking_time.to_string(),
+            "".to_string(),
+        ]);
+
+        table.row(&[
+            "".to_string(),
+            "Price".to_string(),
+            to_string_or_default(report.total_energy_cost.map(|p| p.excl_vat)),
+            to_string_or_default(report.total_time_cost.map(|p| p.excl_vat)),
+            to_string_or_default(report.total_parking_cost.map(|p| p.excl_vat)),
+            to_string_or_default(report.total_fixed_cost.map(|p| p.excl_vat)),
+        ]);
+
+        println!("{}", table);
 
         Ok(())
     }
 }
 
-pub struct PeriodTable<V: Display> {
-    name: String,
-    rows: Vec<PeriodComponent<V>>,
+struct Table {
+    widths: Vec<usize>,
+    items: Vec<Item>,
 }
 
-impl<V: Display> PeriodTable<V> {
-    pub fn new(name: &str) -> Self {
+impl Table {
+    fn new() -> Self {
         Self {
-            rows: Vec::new(),
-            name: name.to_string(),
+            widths: Vec::new(),
+            items: Vec::new(),
         }
     }
 
-    pub fn row<T>(&mut self, dim: &DimensionReport<T>, time: DateTime<Tz>)
-    where
-        T: Into<V> + Dimension,
-    {
-        let cost = dim.cost();
-        self.rows.push(PeriodComponent {
-            time,
-            price: dim.price.as_ref().map(|p| p.price).into(),
-            volume: dim.volume.map(Into::into).into(),
-            billed_volume: dim.billed_volume.map(Into::into).into(),
-            vat: dim.price.as_ref().map(|p| p.vat),
-            cost_excl_vat: cost.map(|c| c.excl_vat).into(),
-            cost_incl_vat: cost
-                .map(|c| {
-                    c.incl_vat
-                        .map(|i| i.to_string())
-                        .unwrap_or_else(|| "<unknown>".into())
-                })
-                .into(),
+    fn retain_rows(&mut self, func: impl Fn(&[String]) -> bool) {
+        self.items.retain(|v| {
+            if let Item::Row(row) = v {
+                func(row)
+            } else {
+                true
+            }
         });
     }
 
-    pub fn into_table(self) -> Table {
-        let mut table = Table::new(self.rows);
-
-        table
-            .with(Style::modern())
-            .with(Panel::header(style(self.name).bold().to_string()))
-            .with(Modify::new(Segment::all()).with(MinWidth::new(10)))
-            .with(Alignment::center());
-
-        table
+    fn line(&mut self) {
+        self.items.push(Item::Line);
     }
-}
 
-#[derive(Tabled)]
-pub struct PeriodComponent<V: Display> {
-    #[tabled(rename = "Time", display_with = "format_time")]
-    time: DateTime<Tz>,
-    #[tabled(rename = "Price")]
-    price: OptionDisplay<Money>,
-    #[tabled(rename = "VAT", display_with = "format_vat")]
-    vat: Option<CompatibilityVat>,
-    #[tabled(rename = "Volume")]
-    volume: OptionDisplay<V>,
-    #[tabled(rename = "Billed volume")]
-    billed_volume: OptionDisplay<V>,
-    #[tabled(rename = "Cost excl. VAT")]
-    cost_excl_vat: OptionDisplay<Money>,
-    #[tabled(rename = "Cost incl. VAT")]
-    cost_incl_vat: OptionDisplay<String>,
-}
+    fn row<R>(&mut self, row: R)
+    where
+        R: IntoIterator,
+        R::Item: Display,
+    {
+        let mut values = Vec::new();
 
-fn format_time(time: &DateTime<Tz>) -> String {
-    time.format("%y-%m-%d %H:%M:%S").to_string()
-}
+        for (i, value) in row.into_iter().enumerate() {
+            let value = value.to_string();
 
-fn format_vat(vat: &Option<CompatibilityVat>) -> String {
-    if let Some(vat) = *vat {
-        match vat {
-            CompatibilityVat::Vat(vat) => OptionDisplay(vat).to_string(),
-            CompatibilityVat::Unknown => "<unknown>".into(),
+            if i == self.widths.len() {
+                self.widths.push(value.len());
+            } else {
+                self.widths[i] = self.widths[i].max(value.len());
+            }
+
+            values.push(value);
         }
-    } else {
-        String::new()
+
+        self.items.push(Item::Row(values));
+    }
+
+    fn header<H>(&mut self, header: H)
+    where
+        H: IntoIterator,
+        H::Item: Display,
+    {
+        self.items.push(Item::Line);
+        self.row(header);
+        self.items.push(Item::Line);
     }
 }
 
-pub struct OptionDisplay<T>(Option<T>);
-
-impl<T> From<Option<T>> for OptionDisplay<T> {
-    fn from(value: Option<T>) -> Self {
-        Self(value)
-    }
-}
-
-impl<T> Display for OptionDisplay<T>
-where
-    T: Display,
-{
+impl Display for Table {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(value) = &self.0 {
-            value.fmt(f)
-        } else {
-            Ok(())
+        let mut line = false;
+
+        let iter = iter::once(&Item::Line)
+            .chain(&self.items)
+            .chain(iter::once(&Item::Line));
+
+        for item in iter {
+            match item {
+                Item::Line if !line => {
+                    write!(f, "+")?;
+
+                    for width in &self.widths {
+                        write!(f, "{0:->1$}+", "", width + 2)?;
+                    }
+
+                    writeln!(f)?;
+
+                    line = true;
+                }
+                Item::Row(row) => {
+                    write!(f, "|")?;
+
+                    for (value, &width) in row.iter().zip(&self.widths) {
+                        write!(f, " {0: <1$} |", value, width)?;
+                    }
+
+                    writeln!(f)?;
+
+                    line = false;
+                }
+                Item::Line => {}
+            }
         }
-    }
-}
 
-#[derive(Clone, Copy)]
-pub struct UnitDisplay;
-
-impl Display for UnitDisplay {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Ok(())
     }
 }
 
-impl From<()> for UnitDisplay {
-    fn from(_: ()) -> Self {
-        UnitDisplay
-    }
+enum Item {
+    Row(Vec<String>),
+    Line,
+}
+
+fn to_string_or_default<T: Display>(v: Option<T>) -> String {
+    v.map(|v| v.to_string()).unwrap_or_default()
 }
