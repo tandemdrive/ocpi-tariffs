@@ -188,7 +188,7 @@ impl Validate {
             style("Validating").green().bold(),
             style(self.args.cdr_name()).blue(),
             style(self.args.tariff_name()).blue(),
-            style(self.args.timezone).blue(),
+            style(&report.time_zone).blue(),
         );
 
         let mut table = Table::new();
