@@ -19,4 +19,4 @@ serde.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
-test-each = { version = "0.2.1" }
+test-each = { version = "0.3.1" }
