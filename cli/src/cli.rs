@@ -180,6 +180,7 @@ pub struct Validate {
 }
 
 impl Validate {
+    #[allow(clippy::too_many_lines)]
     fn run(self) -> Result<()> {
         let (report, cdr, _) = self.args.load_all()?;
 
@@ -314,7 +315,7 @@ impl Validate {
 
         table.retain_rows(|v| !v[1].is_empty() || !v[2].is_empty());
 
-        println!("{}", table);
+        println!("{table}");
 
         if !is_valid {
             println!(
@@ -323,12 +324,12 @@ impl Validate {
             );
 
             exit(1);
-        } else {
-            println!(
-                "Calculation {} all totals in the CDR.\n",
-                style("matches").green().bold()
-            );
         }
+
+        println!(
+            "Calculation {} all totals in the CDR.\n",
+            style("matches").green().bold()
+        );
 
         Ok(())
     }
@@ -365,7 +366,7 @@ impl Analyze {
             "Flat",
         ]);
 
-        for period in report.periods.iter() {
+        for period in &report.periods {
             let start_time = period.start_date_time.with_timezone(&time_zone);
             let dim = &period.dimensions;
 
@@ -379,7 +380,7 @@ impl Analyze {
             ]);
 
             table.row(&[
-                "".to_string(),
+                String::new(),
                 "Price".to_string(),
                 to_string_or_default(dim.energy.price.map(|p| p.price)),
                 to_string_or_default(dim.time.price.map(|p| p.price)),
@@ -396,11 +397,11 @@ impl Analyze {
             report.total_energy.to_string(),
             report.total_time.to_string(),
             report.total_parking_time.to_string(),
-            "".to_string(),
+            String::new(),
         ]);
 
         table.row(&[
-            "".to_string(),
+            String::new(),
             "Price".to_string(),
             to_string_or_default(report.total_energy_cost.map(|p| p.excl_vat)),
             to_string_or_default(report.total_time_cost.map(|p| p.excl_vat)),
@@ -408,7 +409,7 @@ impl Analyze {
             to_string_or_default(report.total_fixed_cost.map(|p| p.excl_vat)),
         ]);
 
-        println!("{}", table);
+        println!("{table}");
 
         Ok(())
     }
@@ -499,7 +500,7 @@ impl Display for Table {
                     write!(f, "|")?;
 
                     for (value, &width) in row.iter().zip(&self.widths) {
-                        write!(f, " {0: <1$} |", value, width)?;
+                        write!(f, " {value: <width$} |")?;
                     }
 
                     writeln!(f)?;
