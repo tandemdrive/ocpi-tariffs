@@ -10,6 +10,9 @@ license.workspace = true
 [features]
 ocpi-v211 = []
 
+[lints]
+workspace = true
+
 [dependencies]
 chrono-tz.workspace = true
 chrono = { version = "0.4.35", default-features = false, features = ["serde"] }
@@ -19,7 +22,4 @@ serde.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
-test-each = { version = "0.2.1" }
-
-[lints]
-workspace = true
+test-each = { version = "0.3.1" }
