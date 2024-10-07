@@ -17,7 +17,9 @@ workspace = true
 chrono-tz.workspace = true
 chrono = { version = "0.4.35", default-features = false, features = ["serde"] }
 rust_decimal_macros = "1.34.2"
-rust_decimal = { version = "1.32.0", features = ["serde-with-arbitrary-precision"] }
+rust_decimal = { version = "1.32.0", features = [
+  "serde-with-arbitrary-precision",
+] }
 serde.workspace = true
 
 [dev-dependencies]

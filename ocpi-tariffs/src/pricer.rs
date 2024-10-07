@@ -1,3 +1,7 @@
+use chrono::{DateTime, Utc};
+use chrono_tz::Tz;
+use serde::Serialize;
+
 use crate::{
     ocpi::{
         cdr::Cdr,
@@ -13,10 +17,6 @@ use crate::{
     },
     Error, Result,
 };
-
-use chrono::{DateTime, Utc};
-use chrono_tz::Tz;
-use serde::Serialize;
 
 /// Pricer that encapsulates a single charge-session and a list of tariffs.
 /// To run the pricer call `build_report`. The resulting report contains the totals, subtotals and a breakdown of the
@@ -87,7 +87,7 @@ impl<'a> Pricer<'a> {
 
     /// Attempt to apply the first applicable tariff to the charge session and build a report
     /// containing the results.
-    #[allow(clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines)]
     pub fn build_report(self) -> Result<Report> {
         let cdr_tz = self.cdr.cdr_location.time_zone.as_ref();
 

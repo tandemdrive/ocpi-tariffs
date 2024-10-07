@@ -1,6 +1,6 @@
 [build]
 target-dir = "target"
 rustdocflags = [
-    "-Arustdoc::private_intra_doc_links",
-    "-Drustdoc::broken_intra_doc_links",
+  "-Arustdoc::private_intra_doc_links",
+  "-Drustdoc::broken_intra_doc_links",
 ]

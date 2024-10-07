@@ -1,3 +1,6 @@
+use chrono::{Datelike, Duration, NaiveDate, NaiveTime, Weekday};
+use chrono_tz::Tz;
+
 use crate::{
     ocpi::cdr::{Cdr, OcpiCdrDimension, OcpiChargingPeriod},
     types::{
@@ -5,9 +8,6 @@ use crate::{
         time::DateTime,
     },
 };
-
-use chrono::{Datelike, Duration, NaiveDate, NaiveTime, Weekday};
-use chrono_tz::Tz;
 
 pub struct ChargeSession {
     pub start_date_time: DateTime,

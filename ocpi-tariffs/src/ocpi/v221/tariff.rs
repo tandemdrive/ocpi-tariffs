@@ -2,13 +2,14 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::types::{
-    electricity::{Ampere, Kw, Kwh},
-    money::{Money, Price, Vat},
-    time::{DateTime, DayOfWeek, OcpiDate, OcpiTime, SecondsRound},
+use crate::{
+    null_default,
+    types::{
+        electricity::{Ampere, Kw, Kwh},
+        money::{Money, Price, Vat},
+        time::{DateTime, DayOfWeek, OcpiDate, OcpiTime, SecondsRound},
+    },
 };
-
-use crate::null_default;
 
 /// The Tariff object describes a tariff and its properties
 #[derive(Clone, Deserialize, Serialize)]

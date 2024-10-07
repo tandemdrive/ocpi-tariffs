@@ -1,12 +1,13 @@
 use serde::Serialize;
 
-use crate::ocpi::tariff::{
-    CompatibilityVat, OcpiPriceComponent, OcpiTariff, OcpiTariffElement, TariffDimensionType,
+use crate::{
+    ocpi::tariff::{
+        CompatibilityVat, OcpiPriceComponent, OcpiTariff, OcpiTariffElement, TariffDimensionType,
+    },
+    restriction::{collect_restrictions, Restriction},
+    session::ChargePeriod,
+    types::{money::Money, time::DateTime},
 };
-
-use crate::restriction::{collect_restrictions, Restriction};
-use crate::session::ChargePeriod;
-use crate::types::{money::Money, time::DateTime};
 
 pub struct Tariff {
     pub id: String,
@@ -124,7 +125,7 @@ impl TariffElement {
     }
 
     // use this in the future to validate if a period is still valid when it ends.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub fn is_active_at_end(&self, period: &ChargePeriod) -> bool {
         for restriction in &self.restrictions {
             if !restriction.instant_validity_inclusive(&period.end_instant) {

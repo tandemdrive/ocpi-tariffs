@@ -1,17 +1,17 @@
 //! The Tariff object describes a tariff and its properties
 
-use crate::null_default;
-
 use serde::{Deserialize, Serialize};
 use v221::tariff::CompatibilityVat;
 
-use crate::types::{
-    electricity::{Kw, Kwh},
-    money::Money,
-    time::{DateTime, DayOfWeek, OcpiDate, OcpiTime, SecondsRound},
+use crate::{
+    null_default,
+    ocpi::v221,
+    types::{
+        electricity::{Kw, Kwh},
+        money::Money,
+        time::{DateTime, DayOfWeek, OcpiDate, OcpiTime, SecondsRound},
+    },
 };
-
-use crate::ocpi::v221;
 
 /// The Tariff object describes a tariff and its properties
 #[derive(Clone, Deserialize, Serialize)]

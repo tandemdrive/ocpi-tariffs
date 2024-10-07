@@ -1,14 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 use super::tariff::OcpiTariff;
-
-use crate::{null_default, ocpi::v221};
-
-use crate::types::money::Money;
-use crate::types::{
-    electricity::{Ampere, Kwh},
-    money::Price,
-    time::{DateTime, HoursDecimal},
+use crate::{
+    null_default,
+    ocpi::v221,
+    types::{
+        electricity::{Ampere, Kwh},
+        money::{Money, Price},
+        time::{DateTime, HoursDecimal},
+    },
 };
 
 /// The CDR object describes the Charging Session and its costs. How these costs are build up etc.

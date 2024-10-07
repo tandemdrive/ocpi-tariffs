@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::fmt::Display;
+
+use serde::{Deserialize, Serialize};
 
 use super::{electricity::Kwh, number::Number, time::HoursDecimal};
 

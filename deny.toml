@@ -26,7 +26,7 @@ allow = ["Apache-2.0", "MIT"]
 
 # ignore the local workspace crates
 [licenses.private]
-ignore = true 
+ignore = true
 
 [[licenses.exceptions]]
 allow = ["Unicode-DFS-2016"]

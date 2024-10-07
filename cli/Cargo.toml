@@ -13,10 +13,15 @@ path = "src/main.rs"
 
 [dependencies]
 chrono-tz.workspace = true
-chrono = { version = "0.4.38", default-features = false, features = ["alloc", "serde"] }
+chrono = { version = "0.4.38", default-features = false, features = [
+  "alloc",
+  "serde",
+] }
 clap = { version = "4.5.4", features = ["derive"] }
 console = { version = "0.15.8" }
-ocpi-tariffs = { version = "0.6.1", path = "../ocpi-tariffs", features = ["ocpi-v211"] }
+ocpi-tariffs = { version = "0.6.1", path = "../ocpi-tariffs", features = [
+  "ocpi-v211",
+] }
 serde_json.workspace = true
 serde.workspace = true
 

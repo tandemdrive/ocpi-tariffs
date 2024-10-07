@@ -4,9 +4,8 @@ use chrono::Duration;
 use chrono_tz::Tz;
 use serde::{Deserialize, Serialize, Serializer};
 
-use crate::Error;
-
 use super::number::Number;
+use crate::Error;
 
 const SECS_IN_MIN: i64 = 60;
 const MINS_IN_HOUR: i64 = 60;
@@ -304,9 +303,8 @@ mod hour_decimal_tests {
     use chrono::Duration;
     use rust_decimal_macros::dec;
 
-    use crate::types::number::Number;
-
     use super::HoursDecimal;
+    use crate::types::number::Number;
 
     #[test]
     fn zero_minutes_should_be_zero_hours() {
