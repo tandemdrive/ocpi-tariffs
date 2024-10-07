@@ -11,12 +11,11 @@ use std::{
 use chrono_tz::Tz;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use console::style;
-use serde::de::DeserializeOwned;
-
 use ocpi_tariffs::{
     ocpi::{cdr::Cdr, tariff::OcpiTariff, v211},
     pricer::{Pricer, Report},
 };
+use serde::de::DeserializeOwned;
 
 use crate::{error::Error, Result};
 
@@ -180,7 +179,7 @@ pub struct Validate {
 }
 
 impl Validate {
-    #[allow(clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines)]
     fn run(self) -> Result<()> {
         let (report, cdr, _) = self.args.load_all()?;
 

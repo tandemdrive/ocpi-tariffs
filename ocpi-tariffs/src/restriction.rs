@@ -2,9 +2,11 @@ use std::collections::HashSet;
 
 use chrono::{Duration, NaiveDate, NaiveTime, Timelike, Weekday};
 
-use crate::ocpi::tariff::OcpiTariffRestriction;
-use crate::session::{InstantData, PeriodData};
-use crate::types::electricity::{Ampere, Kw, Kwh};
+use crate::{
+    ocpi::tariff::OcpiTariffRestriction,
+    session::{InstantData, PeriodData},
+    types::electricity::{Ampere, Kw, Kwh},
+};
 
 pub fn collect_restrictions(restriction: &OcpiTariffRestriction) -> Vec<Restriction> {
     let mut collected = Vec::new();
@@ -100,7 +102,7 @@ pub enum Restriction {
     MinDuration(Duration),
     MaxDuration(Duration),
     DayOfWeek(HashSet<Weekday>),
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     Reservation,
 }
 
