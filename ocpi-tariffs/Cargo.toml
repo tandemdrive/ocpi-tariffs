@@ -10,6 +10,9 @@ license.workspace = true
 [features]
 ocpi-v211 = []
 
+[lints]
+workspace = true
+
 [dependencies]
 chrono-tz.workspace = true
 chrono = { version = "0.4.35", default-features = false, features = ["serde"] }

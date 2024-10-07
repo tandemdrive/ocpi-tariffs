@@ -14,3 +14,48 @@ resolver = "2"
 chrono-tz = { version = "0.9.0", default-features = false, features = ["std"] }
 serde_json = { version = "1.0.117", default-features = false }
 serde = { version = "1.0.203", features = ["derive"] }
+
+# use only "allow" and "warn" for lints (both rustc and clippy)
+# the Github CI task will fail on warnings but
+# we only want the warnings during local development
+[workspace.lints.rust]
+# Lint groups are set to warn so new lints are used as they become available
+future_incompatible = { level = "warn", priority = -1 }
+let_underscore = { level = "warn", priority = -1 }
+nonstandard-style = { level = "warn", priority = -1 }
+rust_2018_compatibility = { level = "warn", priority = -1 }
+rust_2018_idioms = { level = "warn", priority = -1 }
+rust_2021_compatibility = { level = "warn", priority = -1 }
+unused = { level = "warn", priority = -1 }
+warnings = { level = "warn", priority = -1 }
+
+# 2024 compatibility is allow for now and will be fixed in a near-future PR
+rust_2024_compatibility = { level = "allow", priority = -2 }
+
+# We also warn on a set of individual lints that are ont included in any group
+async_fn_in_trait = "warn"
+dead_code = "warn"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+unsafe_code = "warn"
+unused_import_braces = "warn"
+unused_lifetimes = "warn"
+unused_macro_rules = "warn"
+unused_qualifications = "warn"
+
+[workspace.lints.clippy]
+# Lint groups are set to warn so new lints are used as they become available
+complexity = { level = "warn", priority = -1 }
+correctness = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+
+# These lints are explicitly allowed.
+missing_errors_doc = "allow" # the Error type is self documenting
+map_unwrap_or = "allow"      # we prefer to `map(a).unwrap_or(b)` as it's clear what the fallback value is 
+
+# These lints are allowed, but we want to deny them over time
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"

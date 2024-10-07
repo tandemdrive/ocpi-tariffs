@@ -41,10 +41,10 @@ pub struct OcpiPriceComponent {
 
     /// Price per unit (excluding VAT) for this tariff dimension
     pub price: Money,
-    /// Minimum amount to be billed. This unit will be billed in this step_size
-    /// blocks. For example: if type is time and step_size is 300, then time will
+    /// Minimum amount to be billed. This unit will be billed in this `step_size`
+    /// blocks. For example: if type is time and `step_size` is 300, then time will
     /// be billed in blocks of 5 minutes, so if 6 minutes is used, 10 minutes (2
-    /// blocks of step_size) will be billed
+    /// blocks of `step_size`) will be billed
     pub step_size: u64,
 }
 
@@ -62,13 +62,13 @@ pub struct OcpiTariffElement {
 #[derive(Debug, Copy, PartialEq, Eq, Clone, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum TariffDimensionType {
-    /// Defined in kWh, step_size multiplier: 1 Wh
+    /// Defined in kWh, `step_size` multiplier: 1 Wh
     Energy,
-    /// Flat fee, no unit for step_size
+    /// Flat fee, no unit for `step_size`
     Flat,
-    /// Time not charging: defined in hours, step_size multiplier: 1 second
+    /// Time not charging: defined in hours, `step_size` multiplier: 1 second
     ParkingTime,
-    /// Time charging: defined in hours, step_size multiplier: 1 second
+    /// Time charging: defined in hours, `step_size` multiplier: 1 second
     Time,
 }
 
@@ -80,7 +80,7 @@ pub struct OcpiTariffRestriction {
     pub start_time: Option<OcpiTime>,
 
     /// End time of day, for example 19:45, valid until this
-    /// time of the day. Same syntax as start_time
+    /// time of the day. Same syntax as `start_time`
     pub end_time: Option<OcpiTime>,
 
     /// Start date, for example: 2015-12-24, valid from this day

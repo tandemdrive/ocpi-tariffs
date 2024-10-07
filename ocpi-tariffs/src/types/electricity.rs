@@ -15,11 +15,13 @@ impl Kwh {
     }
 
     /// Saturating addition
+    #[must_use]
     pub fn saturating_add(self, other: Self) -> Self {
         Self(self.0.saturating_add(other.0))
     }
 
     /// Saturating subtraction
+    #[must_use]
     pub fn saturating_sub(self, other: Self) -> Self {
         Self(self.0.saturating_sub(other.0))
     }
@@ -36,6 +38,7 @@ impl Kwh {
     }
 
     /// Round this number to the OCPI specified amount of decimals.
+    #[must_use]
     pub fn with_scale(self) -> Self {
         Self(self.0.with_scale())
     }

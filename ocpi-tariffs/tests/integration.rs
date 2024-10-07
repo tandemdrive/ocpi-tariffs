@@ -5,6 +5,7 @@ use ocpi_tariffs::{
 };
 use std::path::Path;
 
+#[allow(clippy::needless_pass_by_value)]
 #[test_each::file(glob = "ocpi-tariffs/test_data/*/cdr*.json", name(segments = 2))]
 fn test_json(cdr: &str, path: &Path) {
     let tariff = std::fs::read_to_string(path.parent().unwrap().join("tariff.json")).unwrap();
