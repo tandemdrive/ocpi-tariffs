@@ -23,7 +23,7 @@ pub fn normalize(tariff: &mut OcpiTariff) {
     remove_components.sort();
     remove_elements.sort();
 
-    // Remove them in sorted reverse order to indices stay intact.
+    // Remove them in sorted reverse order for the indices to stay intact.
     for &(el, comp) in remove_components.iter().rev() {
         tariff.elements[el].price_components.remove(comp);
     }
