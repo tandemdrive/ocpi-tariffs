@@ -14,6 +14,11 @@ impl Kwh {
         Self(Number::default())
     }
 
+    #[must_use]
+    pub(crate) fn normalize(self) -> Self {
+        Self(self.0.normalize())
+    }
+
     /// Saturating addition
     #[must_use]
     pub fn saturating_add(self, other: Self) -> Self {
@@ -39,8 +44,13 @@ impl Kwh {
 
     /// Round this number to the OCPI specified amount of decimals.
     #[must_use]
-    pub fn with_scale(self) -> Self {
-        Self(self.0.with_scale())
+    pub fn with_default_scale(self) -> Self {
+        Self(self.0.with_default_scale())
+    }
+
+    /// Round this number to the specified amount of decimals.
+    pub fn with_scale(self, scale: u32) -> Self {
+        Self(self.0.with_scale(scale))
     }
 }
 
@@ -58,7 +68,7 @@ impl From<Kwh> for Number {
 
 impl Display for Kwh {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:.4}", self.0)
+        self.0.fmt(f)
     }
 }
 

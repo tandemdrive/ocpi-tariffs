@@ -47,6 +47,8 @@ pub enum Command {
     ///
     /// This command will show you a breakdown of all the calculated costs.
     Analyze(Analyze),
+    /// Lint a provided tariff.
+    Lint(Lint),
 }
 
 impl Command {
@@ -54,6 +56,7 @@ impl Command {
         match self {
             Self::Validate(args) => args.run(),
             Self::Analyze(args) => args.run(),
+            Self::Lint(args) => args.run(),
         }
     }
 }
@@ -217,7 +220,7 @@ impl Validate {
 
         table.row(&[
             "Total Energy".into(),
-            report.total_energy.with_scale().to_string(),
+            report.total_energy.with_default_scale().to_string(),
             cdr.total_energy.to_string(),
         ]);
 
@@ -226,7 +229,7 @@ impl Validate {
         table.row(&[
             "Total Cost (Excl.)".into(),
             to_string_or_default(report.total_cost.map(|p| p.excl_vat)),
-            cdr.total_cost.with_scale().excl_vat.to_string(),
+            cdr.total_cost.with_default_scale().excl_vat.to_string(),
         ]);
 
         table.row(&[
@@ -242,13 +245,21 @@ impl Validate {
 
         table.row(&[
             "Total Time Cost (Excl.)".into(),
-            to_string_or_default(report.total_time_cost.map(|p| p.with_scale().excl_vat)),
+            to_string_or_default(
+                report
+                    .total_time_cost
+                    .map(|p| p.with_default_scale().excl_vat),
+            ),
             to_string_or_default(cdr.total_time_cost.map(|p| p.excl_vat)),
         ]);
 
         table.row(&[
             "Total Time Cost (Incl.)".into(),
-            to_string_or_default(report.total_time_cost.and_then(|p| p.with_scale().incl_vat)),
+            to_string_or_default(
+                report
+                    .total_time_cost
+                    .and_then(|p| p.with_default_scale().incl_vat),
+            ),
             to_string_or_default(cdr.total_time_cost.and_then(|p| p.incl_vat)),
         ]);
 
@@ -521,4 +532,56 @@ enum Item {
 
 fn to_string_or_default<T: Display>(v: Option<T>) -> String {
     v.map(|v| v.to_string()).unwrap_or_default()
+}
+
+#[derive(Parser)]
+pub struct Lint {
+    /// A path to the tariff structure in json format.
+    #[arg(short = 't', long)]
+    tariff: Option<PathBuf>,
+    /// The OCPI version that should be used for the input structures.
+    ///
+    /// If the input consists of version 2.1.1 structures they will be converted to 2.2.1
+    /// structures. The actual calculation and output will always be according to OCPI 2.2.1.
+    ///
+    /// use `detect` to let to tool try to find the matching version.
+    #[arg(short = 'o', long, value_enum, default_value_t = OcpiVersion::default())]
+    ocpi_version: OcpiVersion,
+}
+
+impl Lint {
+    fn run(self) -> Result<()> {
+        let tariff = if let Some(tariff) = &self.tariff {
+            let file = File::open(tariff).map_err(|e| Error::file(tariff.clone(), e))?;
+            from_reader_with_version::<_, _, v211::tariff::OcpiTariff>(file, self.ocpi_version)
+                .map_err(|e| Error::deserialize(tariff.display(), "Tariff", e))?
+        } else {
+            let mut stdin = stdin().lock();
+            from_reader_with_version::<_, _, v211::tariff::OcpiTariff>(
+                &mut stdin,
+                self.ocpi_version,
+            )
+            .map_err(|e| Error::deserialize("<stdin>", "Tariff", e))?
+        };
+
+        let warnings = ocpi_tariffs::lint::lint(&tariff);
+
+        println!(
+            "\n{} tariff `{}`:",
+            style("Linting").green().bold(),
+            style(
+                self.tariff
+                    .map(|t| t.file_name().unwrap().to_string_lossy().to_string())
+                    .unwrap_or("<stdin>".into())
+            )
+            .blue(),
+        );
+
+        for warn in warnings {
+            println!(" - {}", warn);
+        }
+
+        println!();
+        Ok(())
+    }
 }

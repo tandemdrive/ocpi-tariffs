@@ -1,0 +1,36 @@
+use crate::{
+    lint::{lint, Warning},
+    ocpi::v221::tariff::OcpiTariff,
+};
+
+pub fn normalize(tariff: &mut OcpiTariff) {
+    let warns = lint(tariff);
+
+    let mut remove_components = Vec::new();
+    let mut remove_elements = Vec::new();
+
+    for warn in warns {
+        match warn {
+            Warning::ElementIsRedundant { element_index } => remove_elements.push(element_index),
+            Warning::ComponentIsRedundant {
+                element_index,
+                component_index,
+            } => remove_components.push((element_index, component_index)),
+            _ => {}
+        }
+    }
+
+    remove_components.sort();
+    remove_elements.sort();
+
+    // Remove them in sorted reverse order to indices stay intact.
+    for &(el, comp) in remove_components.iter().rev() {
+        tariff.elements[el].price_components.remove(comp);
+    }
+
+    for &el in remove_elements.iter().rev() {
+        tariff.elements.remove(el);
+    }
+
+    tariff.elements.retain(|v| !v.price_components.is_empty());
+}

@@ -24,18 +24,18 @@ pub fn validate_cdr(cdr: &Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::E
 
     assert_eq!(
         cdr.total_cost,
-        report.total_cost.unwrap_or_default().with_scale(),
+        report.total_cost.unwrap_or_default().with_default_scale(),
         "total_cost"
     );
 
     assert_eq!(
         cdr.total_energy,
-        report.total_energy.with_scale(),
+        report.total_energy.with_default_scale(),
         "total_energy"
     );
     assert_eq!(
         cdr.total_energy_cost.unwrap_or_default(),
-        report.total_energy_cost.unwrap_or_default().with_scale(),
+        report.total_energy_cost.unwrap_or_default().with_default_scale(),
         "total_energy_cost"
     );
 
@@ -43,7 +43,7 @@ pub fn validate_cdr(cdr: &Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::E
 
     assert_eq!(
         cdr.total_time_cost.unwrap_or_default(),
-        report.total_time_cost.unwrap_or_default().with_scale(),
+        report.total_time_cost.unwrap_or_default().with_default_scale(),
         "total_time_cost"
     );
 
@@ -55,7 +55,7 @@ pub fn validate_cdr(cdr: &Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::E
 
     assert_eq!(
         cdr.total_parking_cost.unwrap_or_default(),
-        report.total_parking_cost.unwrap_or_default().with_scale(),
+        report.total_parking_cost.unwrap_or_default().with_default_scale(),
         "total_parking_cost"
     );
 
@@ -64,13 +64,13 @@ pub fn validate_cdr(cdr: &Cdr, tariff: OcpiTariff) -> Result<(), ocpi_tariffs::E
         report
             .total_reservation_cost
             .unwrap_or_default()
-            .with_scale(),
+            .with_default_scale(),
         "total_reservation_cost"
     );
 
     assert_eq!(
         cdr.total_fixed_cost.unwrap_or_default(),
-        report.total_fixed_cost.unwrap_or_default().with_scale(),
+        report.total_fixed_cost.unwrap_or_default().with_default_scale(),
         "total_fixed_cost"
     );
 

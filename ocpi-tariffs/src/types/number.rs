@@ -10,8 +10,17 @@ impl Number {
         Self(self.0.ceil())
     }
 
-    pub(crate) fn with_scale(mut self) -> Self {
+    pub(crate) fn normalize(self) -> Self {
+        Self(self.0.normalize())
+    }
+
+    pub(crate) fn with_default_scale(mut self) -> Self {
         self.0.rescale(4);
+        self
+    }
+
+    pub(crate) fn with_scale(mut self, scale: u32) -> Self {
+        self.0.rescale(scale);
         self
     }
 
