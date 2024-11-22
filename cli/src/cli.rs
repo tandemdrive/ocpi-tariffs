@@ -578,7 +578,7 @@ impl Lint {
         );
 
         for warn in warnings {
-            println!(" - {}", warn);
+            println!(" - {warn}");
         }
 
         println!();

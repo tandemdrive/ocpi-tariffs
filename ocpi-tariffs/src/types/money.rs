@@ -36,6 +36,7 @@ impl Price {
     }
 
     /// Round this number to the specified amount of decimals.
+    #[must_use]
     pub fn with_scale(self, scale: u32) -> Self {
         Self {
             excl_vat: self.excl_vat.with_scale(scale),
@@ -81,6 +82,7 @@ impl Money {
     }
 
     /// Round this number to the specified amount of decimals.
+    #[must_use]
     pub fn with_scale(self, scale: u32) -> Self {
         Self(self.0.with_scale(scale))
     }

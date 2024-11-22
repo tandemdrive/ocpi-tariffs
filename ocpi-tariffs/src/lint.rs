@@ -124,19 +124,11 @@ pub fn lint(tariff: &OcpiTariff) -> Vec<Warning> {
     }
 
     // Now for each component type we attempt to lint the restrictions.
+    lint_restrictions(&energy_elements, TariffDimensionType::Energy, &mut warnings);
+    lint_restrictions(&flat_elements, TariffDimensionType::Flat, &mut warnings);
+    lint_restrictions(&time_elements, TariffDimensionType::Energy, &mut warnings);
     lint_restrictions(
-        &mut energy_elements,
-        TariffDimensionType::Energy,
-        &mut warnings,
-    );
-    lint_restrictions(&mut flat_elements, TariffDimensionType::Flat, &mut warnings);
-    lint_restrictions(
-        &mut time_elements,
-        TariffDimensionType::Energy,
-        &mut warnings,
-    );
-    lint_restrictions(
-        &mut parking_time_elements,
+        &parking_time_elements,
         TariffDimensionType::ParkingTime,
         &mut warnings,
     );
@@ -156,12 +148,7 @@ pub fn lint(tariff: &OcpiTariff) -> Vec<Warning> {
     for (el_idx, count) in comp_counts {
         // All components are redundant, mark the whole element as redundant.
         if count == 0 {
-            warnings.retain(|w| match w {
-                &Warning::ComponentIsRedundant { element_index, .. } if el_idx == element_index => {
-                    false
-                }
-                _ => true,
-            });
+            warnings.retain(|w| !matches!(w, &Warning::ComponentIsRedundant { element_index, .. } if el_idx == element_index));
 
             warnings.push(Warning::ElementIsRedundant {
                 element_index: el_idx,
@@ -179,7 +166,7 @@ struct UnaryElement {
 }
 
 fn lint_restrictions(
-    elements: &mut Vec<UnaryElement>,
+    elements: &[UnaryElement],
     ty: TariffDimensionType,
     warnings: &mut Vec<Warning>,
 ) {
@@ -200,7 +187,7 @@ fn lint_restrictions(
 
     let mut matrix = Matrix::new(bounds);
 
-    for element in elements.iter() {
+    for element in elements {
         let Some(restr) = &element.restrictions else {
             matrix.add_pattern(Pattern::new(
                 vec![Range::wildcard(); 4],
@@ -262,7 +249,7 @@ fn lint_restrictions(
             warnings.push(Warning::ComponentIsRedundant {
                 element_index,
                 component_index,
-            })
+            });
         }
     }
 
@@ -273,7 +260,7 @@ fn lint_restrictions(
 
     // If the trailing wildcard is useful it means all the elements above are non-exhaustive.
     if last.is_usefull {
-        warnings.push(Warning::DimensionNotExhaustive { ty, cases: vec![] })
+        warnings.push(Warning::DimensionNotExhaustive { ty, cases: vec![] });
     }
 }
 
@@ -292,7 +279,7 @@ impl Matrix {
     }
 
     fn add_pattern(&mut self, pattern: Pattern) {
-        self.patterns.push(pattern)
+        self.patterns.push(pattern);
     }
 
     /// Computes usefulness for the whole matrix and mark the patterns with usefulness.
@@ -307,7 +294,9 @@ impl Matrix {
             if !witnesses.is_empty() {
                 self.patterns[i].is_usefull = true;
 
-                witnesses.iter_mut().for_each(|v| v.reverse());
+                for witness in &mut witnesses {
+                    witness.reverse();
+                }
 
                 self.patterns[i].witness = witnesses;
             }
@@ -355,13 +344,13 @@ impl Matrix {
                     continue;
                 }
 
-                next_consider.push(i)
+                next_consider.push(i);
             }
 
             for mut witness in self.usefulness_rec(column + 1, pattern, &next_consider) {
                 witness.push(constr);
 
-                witnesses.push(witness)
+                witnesses.push(witness);
             }
         }
 
