@@ -122,8 +122,17 @@ impl Default for HoursDecimal {
 }
 
 /// A generic duration type that converts from and to a integer amount of seconds.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct SecondsRound(Duration);
+
+impl SecondsRound {
+    pub(crate) fn hours(&self) -> Number {
+        Number::from(self.0.num_milliseconds())
+            .checked_div(Number::from(1000 * 60 * 60))
+            .expect("can't be zero")
+            .normalize()
+    }
+}
 
 impl<'de> Deserialize<'de> for SecondsRound {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -157,8 +166,14 @@ impl From<SecondsRound> for Duration {
 }
 
 /// A OCPI specific local date, without a time.
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Serialize)]
 pub struct OcpiDate(chrono::NaiveDate);
+
+impl Display for OcpiDate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl<'de> Deserialize<'de> for OcpiDate {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -195,6 +210,12 @@ impl<'de> Deserialize<'de> for OcpiTime {
         let date = chrono::NaiveTime::parse_from_str(&s, "%H:%M").map_err(D::Error::custom)?;
 
         Ok(Self(date))
+    }
+}
+
+impl Display for OcpiTime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }
 

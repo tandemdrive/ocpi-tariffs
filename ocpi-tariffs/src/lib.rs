@@ -17,6 +17,14 @@ mod restriction;
 mod session;
 mod tariff;
 
+/// Module for generating human readable tariffs.
+pub mod explain;
+
+/// Module for normalizing tariffs.
+pub mod normalize;
+
+pub mod lint;
+
 /// OCPI specific numeric types used for calculations, serializing and deserializing.
 pub mod types;
 

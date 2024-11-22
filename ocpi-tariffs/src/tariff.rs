@@ -11,9 +11,9 @@ use crate::{
 
 pub struct Tariff {
     pub id: String,
-    elements: Vec<TariffElement>,
-    start_date_time: Option<DateTime>,
-    end_date_time: Option<DateTime>,
+    pub elements: Vec<TariffElement>,
+    pub start_date_time: Option<DateTime>,
+    pub end_date_time: Option<DateTime>,
 }
 
 impl Tariff {
@@ -76,9 +76,9 @@ impl Tariff {
     }
 }
 
-struct TariffElement {
-    restrictions: Vec<Restriction>,
-    components: PriceComponents,
+pub(crate) struct TariffElement {
+    pub(crate) restrictions: Vec<Restriction>,
+    pub(crate) components: PriceComponents,
 }
 
 impl TariffElement {

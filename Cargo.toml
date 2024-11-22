@@ -55,6 +55,7 @@ suspicious = { level = "warn", priority = -1 }
 # These lints are explicitly allowed.
 missing_errors_doc = "allow" # the Error type is self documenting
 map_unwrap_or = "allow"      # we prefer to `map(a).unwrap_or(b)` as it's clear what the fallback value is 
+must_use_candidate = "allow"
 
 # These lints are allowed, but we want to deny them over time
 missing_panics_doc = "allow"
